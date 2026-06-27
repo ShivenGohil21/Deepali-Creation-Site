@@ -931,7 +931,7 @@ const Products = () => {
                         printCopies === 1 ? 'h-10' : 'h-7 max-w-full'
                       }`}
                     />
-                    <div className={`flex items-center justify-between font-bold w-full ${
+                    <div className={`flex items-center justify-between font-bold w-full gap-2 ${
                       printCopies === 1 ? 'text-[8px] px-1.5 text-slate-700' : 'text-[6px] px-0.5 text-slate-600'
                     }`}>
                       <span>No: {barcodePrintData.barcodeValue}</span>
@@ -983,7 +983,7 @@ const Products = () => {
                   alt="Print Barcode" 
                   className="h-14 object-contain max-w-full mx-auto"
                 />
-                <div className="flex items-center justify-between text-[8px] font-bold w-full px-1 text-black font-mono">
+                <div className="flex items-center justify-between text-[8px] font-bold w-full px-1 text-black font-mono gap-2">
                   <span>No: {barcodePrintData.barcodeValue}</span>
                   <span className="font-extrabold text-[10px]">₹{barcodePrintData.sellingPrice}</span>
                 </div>
@@ -1011,7 +1011,7 @@ const Products = () => {
                     alt="Print Barcode" 
                     className="h-11 object-contain max-w-full mx-auto"
                   />
-                  <div className="flex items-center justify-between text-[8px] font-bold w-full px-1 text-black leading-none font-mono">
+                  <div className="flex items-center justify-between text-[8px] font-bold w-full px-1 text-black leading-none font-mono gap-2">
                     <span>No: {barcodePrintData.barcodeValue}</span>
                     <span className="font-extrabold text-[9px]">₹{barcodePrintData.sellingPrice}</span>
                   </div>

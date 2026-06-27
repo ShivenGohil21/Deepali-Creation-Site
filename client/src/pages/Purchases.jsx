@@ -400,7 +400,7 @@ const Purchases = () => {
             customPrice: Number(prod.sellingPrice || 0),
             selected: true,
             barcodeImage: barcodeInfo.barcodeImage || '',
-            productName: prod.code ? `${prod.name} - ${prod.code}` : prod.name,
+            productName: prod.code ? `${prod.name} - ${isNaN(parseInt(prod.code, 10)) ? prod.code : parseInt(prod.code, 10)}` : prod.name,
             productColor: prod.color || '',
             barcodeValue: prod.barcodeValue || prod.code,
             shopName: barcodeInfo.shopName || 'Deepali Creation'
@@ -1759,7 +1759,7 @@ const Purchases = () => {
                                 }}
                               />
                               <div 
-                                className="flex items-center justify-between font-bold w-full font-mono leading-none text-slate-700"
+                                className="flex items-center justify-between font-bold w-full font-mono leading-none text-slate-700 gap-2 px-1"
                                 style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                               >
                                 <span>No: {item.barcodeValue}</span>
