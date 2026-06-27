@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API from '../utils/api';
 import { loginStart, loginSuccess, loginFailure, clearError } from '../store/authSlice';
 import { ShoppingBag, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
@@ -27,7 +28,7 @@ const Login = () => {
 
     dispatch(loginStart());
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      const res = await API.post('/auth/login', {
         username,
         password
       });
