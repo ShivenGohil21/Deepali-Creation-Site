@@ -25,12 +25,15 @@ const Dashboard = () => {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await API.get('/reports/dashboard');
       if (res.data.success) {
         setData(res.data.data);
+      } else {
+        setError(res.data.message || 'Failed to fetch dashboard data');
       }
     } catch (err) {
-      setError(err.message || 'Failed to fetch dashboard data');
+      setError(err.response?.data?.message || err.message || 'Failed to fetch dashboard data');
     } finally {
       setLoading(false);
     }
@@ -54,6 +57,15 @@ const Dashboard = () => {
       <div className="p-6 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center space-x-2 font-sans m-6">
         <AlertTriangle size={18} />
         <span>Error loading metrics: {error}</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4">
+        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 font-sans">Initializing metrics...</p>
       </div>
     );
   }
