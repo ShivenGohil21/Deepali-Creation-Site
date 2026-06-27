@@ -1,0 +1,16 @@
+{
+  "name": "deepali-shop-pos-inventory",
+  "version": "1.0.0",
+  "description": "Deepali Shop POS & Inventory Management System (MERN)",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "seed": "npm run seed --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
