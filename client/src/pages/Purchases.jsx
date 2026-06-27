@@ -400,7 +400,7 @@ const Purchases = () => {
             customPrice: Number(prod.sellingPrice || 0),
             selected: true,
             barcodeImage: barcodeInfo.barcodeImage || '',
-            productName: prod.name,
+            productName: prod.code ? `${prod.name} - ${prod.code}` : prod.name,
             productColor: prod.color || '',
             barcodeValue: prod.barcodeValue || prod.code,
             shopName: barcodeInfo.shopName || 'Deepali Creation'
