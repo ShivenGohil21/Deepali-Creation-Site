@@ -828,7 +828,8 @@ const Purchases = () => {
                     if (cleanedQuery) {
                       const exactMatch = products.find(p => 
                         p.code.toLowerCase() === cleanedQuery || 
-                        (p.barcodeValue && p.barcodeValue.toLowerCase() === cleanedQuery)
+                        (p.barcodeValue && p.barcodeValue.toLowerCase() === cleanedQuery) ||
+                        (!isNaN(parseInt(p.code, 10)) && !isNaN(parseInt(cleanedQuery, 10)) && parseInt(p.code, 10) === parseInt(cleanedQuery, 10))
                       );
                       if (exactMatch) {
                         setTempProduct(exactMatch._id);

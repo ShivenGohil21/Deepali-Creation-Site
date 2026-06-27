@@ -46,7 +46,7 @@ const Sales = () => {
       const customerName = s.customer?.name || 'Walk-in Customer';
       const warehouseName = s.warehouse?.name || 'N/A';
       const itemsList = s.items?.map(it => `${it.productName} (x${it.quantity})`).join('; ') || 'N/A';
-      return `"${s.invoiceNumber}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${new Date(s.date).toLocaleDateString()}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
+      return `"${s.invoiceNumber}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${new Date(s.date).toLocaleDateString('en-GB')}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
     }).join('\r\n');
 
     // UTF-8 BOM to prevent Excel encoding issues
@@ -522,7 +522,7 @@ const Sales = () => {
                           <td className="px-6 py-3.5 text-slate-650 dark:text-slate-350 max-w-[200px] truncate" title={sale.items?.map(it => `${it.productName} (x${it.quantity})`).join(', ')}>
                             {sale.items?.map(it => `${it.productName} (x${it.quantity})`).join(', ') || 'N/A'}
                           </td>
-                          <td className="px-6 py-3.5">{new Date(sale.date).toLocaleDateString()}</td>
+                          <td className="px-6 py-3.5">{new Date(sale.date).toLocaleDateString('en-GB')}</td>
                           <td className="px-6 py-3.5">
                             <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-semibold text-[10px] uppercase text-slate-600 dark:text-slate-400">
                               {sale.paymentMethod}
@@ -609,7 +609,7 @@ const Sales = () => {
                           <td className="px-6 py-3.5 font-mono text-[11px] text-slate-500">{r.invoiceNumber}</td>
                           <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{r.customer?.name}</td>
                           <td className="px-6 py-3.5">{r.warehouse?.name}</td>
-                          <td className="px-6 py-3.5">{new Date(r.date).toLocaleDateString()}</td>
+                          <td className="px-6 py-3.5">{new Date(r.date).toLocaleDateString('en-GB')}</td>
                           <td className="px-6 py-3.5 text-right font-bold text-slate-850 dark:text-slate-100">
                             ₹{r.grandTotal.toFixed(2)}
                           </td>
@@ -1013,7 +1013,7 @@ const Sales = () => {
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Date</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleString()}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleString('en-GB')}</span>
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Customer</span>
@@ -1173,7 +1173,7 @@ const Sales = () => {
             </div>
              <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
                <div>Invoice: <span className="font-bold">{selectedSale.invoiceNumber}</span></div>
-               <div>Date: {new Date(selectedSale.date).toLocaleString()}</div>
+               <div>Date: {new Date(selectedSale.date).toLocaleString('en-GB')}</div>
                <div>Customer: {selectedSale.customer?.name} ({selectedSale.customer?.mobile || 'N/A'})</div>
                <div>Warehouse: {selectedSale.warehouse?.name}</div>
                {selectedSale.description && <div>Notes: {selectedSale.description}</div>}
@@ -1227,7 +1227,7 @@ const Sales = () => {
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Return Date</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedReturn.date).toLocaleDateString()}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedReturn.date).toLocaleDateString('en-GB')}</span>
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Original Invoice</span>
