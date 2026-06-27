@@ -190,10 +190,10 @@ const Dashboard = () => {
                 <div className="py-8 text-center text-xs text-slate-400">No checkout transactions recorded yet.</div>
               ) : (
                 topSellingProducts.map((item, idx) => (
-                  <div key={item.product._id} className="py-2.5 flex items-center justify-between">
+                  <div key={item.product?._id || idx} className="py-2.5 flex items-center justify-between">
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{item.product.name}</p>
-                      <span className="text-[10px] text-slate-400 font-mono block">{item.product.code}</span>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{item.product?.name || 'Deleted Product'}</p>
+                      <span className="text-[10px] text-slate-400 font-mono block">{item.product?.code || 'N/A'}</span>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.quantity} Sold</p>

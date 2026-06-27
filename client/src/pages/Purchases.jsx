@@ -217,7 +217,7 @@ const Purchases = () => {
     const qty = Number(tempQty);
     
     // Check if item already added
-    const existingIdx = purchaseItems.findIndex(it => it.productObj._id === prod._id);
+    const existingIdx = purchaseItems.findIndex(it => it.productObj?._id === prod._id);
     if (existingIdx !== -1) {
       const updated = [...purchaseItems];
       updated[existingIdx].quantity += qty;
@@ -285,7 +285,7 @@ const Purchases = () => {
       supplierId: selectedSupplier || supplierSearch,
       warehouseId: selectedWarehouse,
       items: purchaseItems.map(it => ({
-        productId: it.productObj._id,
+        productId: it.productObj?._id,
         costPrice: it.costPrice,
         quantity: it.quantity
       })),
@@ -892,9 +892,9 @@ const Purchases = () => {
                   ) : (
                     purchaseItems.map((item, idx) => (
                       <tr key={idx} className="text-slate-700 dark:text-slate-300">
-                        <td className="py-2.5 font-mono text-[11px]">{item.productObj.code}</td>
-                        <td className="py-2.5 font-mono text-[11px] text-slate-500">{item.productObj.barcodeValue || '-'}</td>
-                        <td className="py-2.5 font-medium">{item.productObj.name}</td>
+                        <td className="py-2.5 font-mono text-[11px]">{item.productObj?.code || 'N/A'}</td>
+                        <td className="py-2.5 font-mono text-[11px] text-slate-500">{item.productObj?.barcodeValue || '-'}</td>
+                        <td className="py-2.5 font-medium">{item.productObj?.name || 'Deleted Product'}</td>
                         <td className="py-1 text-center">
                           <div className="flex items-center justify-center space-x-1">
                             <span className="text-slate-450">₹</span>
@@ -915,7 +915,7 @@ const Purchases = () => {
                               onChange={(e) => handleUpdateItem(idx, 'quantity', e.target.value)}
                               className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-1 text-center text-xs font-bold focus:outline-none"
                             />
-                            <span className="text-[10px] text-slate-400 font-semibold">{item.productObj.unit}</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">{item.productObj?.unit || 'Pcs'}</span>
                           </div>
                         </td>
                         <td className="py-2.5 text-center font-bold text-slate-900 dark:text-slate-100">
