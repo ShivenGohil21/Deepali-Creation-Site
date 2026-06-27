@@ -159,6 +159,7 @@ const Purchases = () => {
 
   // Selector temp item variables
   const [tempProduct, setTempProduct] = useState('');
+  const [prodSearch, setProdSearch] = useState('');
   const [tempCostPrice, setTempCostPrice] = useState('');
   const [tempQty, setTempQty] = useState('');
   const qtyInputRef = useRef(null);
@@ -239,6 +240,7 @@ const Purchases = () => {
     setTempProduct('');
     setTempCostPrice('');
     setTempQty('');
+    setProdSearch('');
   };
 
   const handleRemoveItem = (idx) => {
@@ -259,7 +261,8 @@ const Purchases = () => {
 
   // Calculate totals
   const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
-  const grandTotal = Math.max(0, subTotal - Number(discount || 0));
+  const discountAmount = subTotal * (Number(discount || 0) / 100);
+  const grandTotal = Math.max(0, subTotal - discountAmount);
 
   const resetForm = () => {
     setPurchaseItems([]);
@@ -290,7 +293,7 @@ const Purchases = () => {
         quantity: it.quantity
       })),
       subTotal,
-      discount: Number(discount),
+      discount: discountAmount,
       grandTotal,
       paymentStatus,
       amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
@@ -332,7 +335,9 @@ const Purchases = () => {
     );
     setPaymentStatus(p.paymentStatus || 'Paid');
     setAmountPaid(p.amountPaid || '');
-    setDiscount(p.discount || 0);
+    const editSubTotal = p.items.reduce((sum, it) => sum + (it.total || (it.costPrice * it.quantity)), 0);
+    const discountPercent = editSubTotal > 0 ? (p.discount / editSubTotal) * 100 : 0;
+    setDiscount(Number(discountPercent.toFixed(2)));
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
@@ -807,14 +812,46 @@ const Purchases = () => {
             </h3>
 
             {/* Selector Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs items-end bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 text-xs items-end bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200/50 dark:border-slate-850">
+              <div className="space-y-1 md:col-span-3">
+                <span>Search / Scan Code</span>
+                <input
+                  type="text"
+                  placeholder="Type code or scan..."
+                  value={prodSearch}
+                  onChange={(e) => {
+                    const query = e.target.value;
+                    setProdSearch(query);
+                    
+                    // Try to find exact match by code or barcode
+                    const cleanedQuery = query.trim().toLowerCase();
+                    if (cleanedQuery) {
+                      const exactMatch = products.find(p => 
+                        p.code.toLowerCase() === cleanedQuery || 
+                        (p.barcodeValue && p.barcodeValue.toLowerCase() === cleanedQuery)
+                      );
+                      if (exactMatch) {
+                        setTempProduct(exactMatch._id);
+                        setTempCostPrice(exactMatch.costPrice);
+                        setTempQty('');
+                        setTimeout(() => {
+                          qtyInputRef.current?.focus();
+                        }, 50);
+                      }
+                    }
+                  }}
+                  className="w-full bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none border-slate-200 dark:border-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1 md:col-span-4">
                 <span>Select Product</span>
                 <select
                   value={tempProduct}
                   onChange={(e) => {
-                    setTempProduct(e.target.value);
-                    const prod = products.find(p => p._id === e.target.value);
+                    const val = e.target.value;
+                    setTempProduct(val);
+                    const prod = products.find(p => p._id === val);
                     if (prod) {
                       setTempCostPrice(prod.costPrice);
                       setTempQty(''); // Default quantity to empty string when selected
@@ -826,16 +863,27 @@ const Purchases = () => {
                       setTempQty('');
                     }
                   }}
-                  className="w-full bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none border-slate-200 dark:border-slate-800"
                 >
                   <option value="">Choose item...</option>
-                  {products.map(p => (
-                    <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
-                  ))}
+                  {products
+                    .filter(p => {
+                      if (!prodSearch) return true;
+                      const q = prodSearch.toLowerCase();
+                      return (
+                        p.name.toLowerCase().includes(q) ||
+                        p.code.toLowerCase().includes(q) ||
+                        (p.barcodeValue && p.barcodeValue.toLowerCase().includes(q))
+                      );
+                    })
+                    .map(p => (
+                      <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
+                    ))
+                  }
                 </select>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 md:col-span-3">
                 <span>Wholesale Cost Price (₹)</span>
                 <input
                   type="number"
@@ -843,11 +891,11 @@ const Purchases = () => {
                   placeholder="Cost price"
                   value={tempCostPrice}
                   onChange={(e) => setTempCostPrice(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 md:col-span-2">
                 <span>Quantity</span>
                 <input
                   type="number"
@@ -855,14 +903,14 @@ const Purchases = () => {
                   placeholder="Qty"
                   value={tempQty}
                   onChange={(e) => setTempQty(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={handleAddPurchaseItem}
-                className="md:col-span-3 bg-primary-600 hover:bg-primary-500 text-white font-bold py-2 rounded-xl text-center active:scale-[0.99] transition-all"
+                className="md:col-span-12 bg-primary-600 hover:bg-primary-500 text-white font-bold py-2 rounded-xl text-center active:scale-[0.99] transition-all"
               >
                 Add to Purchase List
               </button>
@@ -1040,12 +1088,15 @@ const Purchases = () => {
 
               {/* Discount Input */}
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bill Discount (Flat ₹)</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bill Discount (%)</span>
                 <input
                   type="number"
                   placeholder="0"
+                  step="0.01"
+                  min="0"
+                  max="100"
                   value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
+                  onChange={(e) => setDiscount(Math.max(0, Math.min(100, Number(e.target.value))))}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
               </div>
@@ -1108,8 +1159,8 @@ const Purchases = () => {
                   <span className="font-semibold">₹{subTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-450">Discount:</span>
-                  <span className="text-red-500 font-semibold">-₹{Number(discount || 0).toFixed(2)}</span>
+                  <span className="text-slate-450">Discount ({discount}%):</span>
+                  <span className="text-red-500 font-semibold">-₹{discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 text-xs font-bold text-slate-900 dark:text-white">
                   <span>Grand Total:</span>
