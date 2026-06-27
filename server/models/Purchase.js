@@ -76,4 +76,8 @@ const PurchaseSchema = new mongoose.Schema({
   }
 });
 
+PurchaseSchema.index({ date: -1 });
+PurchaseSchema.index({ supplier: 1 });
+PurchaseSchema.index({ warehouse: 1 });
+
 module.exports = mongoose.model('Purchase', PurchaseSchema);

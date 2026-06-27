@@ -93,4 +93,7 @@ const ProductSchema = new mongoose.Schema({
   }
 });
 
+ProductSchema.index({ createdAt: -1 });
+ProductSchema.index({ status: 1 });
+
 module.exports = mongoose.model('Product', ProductSchema);

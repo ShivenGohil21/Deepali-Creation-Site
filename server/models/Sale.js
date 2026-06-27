@@ -118,4 +118,8 @@ const SaleSchema = new mongoose.Schema({
   }
 });
 
+SaleSchema.index({ date: -1 });
+SaleSchema.index({ customer: 1 });
+SaleSchema.index({ warehouse: 1 });
+
 module.exports = mongoose.model('Sale', SaleSchema);

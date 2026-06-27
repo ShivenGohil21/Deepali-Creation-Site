@@ -33,4 +33,6 @@ const AuditLogSchema = new mongoose.Schema({
   }
 });
 
+AuditLogSchema.index({ date: -1 });
+
 module.exports = mongoose.model('AuditLog', AuditLogSchema);

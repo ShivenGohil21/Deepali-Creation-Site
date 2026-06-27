@@ -20,4 +20,6 @@ const NotificationSchema = new mongoose.Schema({
   }
 });
 
+NotificationSchema.index({ date: -1 });
+
 module.exports = mongoose.model('Notification', NotificationSchema);
