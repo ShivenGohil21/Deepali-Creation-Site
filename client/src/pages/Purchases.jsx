@@ -396,7 +396,7 @@ const Purchases = () => {
             product: prod,
             purchaseQuantity: it.quantity || 0,
             currentStock: currentStock,
-            quantity: currentStock, // Default copies to current product stock pcs!
+            quantity: it.quantity || 0,
             customPrice: Number(prod.sellingPrice || 0),
             selected: true,
             barcodeImage: barcodeInfo.barcodeImage || '',

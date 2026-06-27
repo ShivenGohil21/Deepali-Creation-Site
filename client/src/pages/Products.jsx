@@ -50,9 +50,6 @@ const Products = () => {
   const [formSellingPrice, setFormSellingPrice] = useState('');
   const [formTax, setFormTax] = useState(0);
   const [formAlertQty, setFormAlertQty] = useState(5);
-  const [formInitialStock, setFormInitialStock] = useState(0);
-  const [formCurrentStock, setFormCurrentStock] = useState(0);
-  const [formWarehouse, setFormWarehouse] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formColor, setFormColor] = useState('');
   const [formPrefix, setFormPrefix] = useState('D'); // D, SH, TS
@@ -170,8 +167,6 @@ const Products = () => {
     setFormSellingPrice('');
     setFormTax(0);
     setFormAlertQty(5);
-    setFormInitialStock(0);
-    setFormCurrentStock(0);
     setFormDescription('');
     setFormColor('');
     setFormPrefix('D');
@@ -190,8 +185,6 @@ const Products = () => {
     setFormSellingPrice(product.sellingPrice);
     setFormTax(product.tax || 0);
     setFormAlertQty(product.alertQuantity);
-    setFormInitialStock(product.initialStock || product.stockQuantity || 0);
-    setFormCurrentStock(product.stockQuantity || 0);
     setFormDescription(product.description || '');
     setFormColor(product.color || '');
     setFormPrefix(product.code.match(/^[A-Za-z]+/)?.[0] || 'D');
@@ -258,8 +251,6 @@ const Products = () => {
         // Edit flow
         payload.code = formCode || undefined;
         payload.barcodeValue = formBarcodeValue || undefined;
-        payload.initialStock = Number(formInitialStock);
-        payload.stockQuantity = Number(formCurrentStock);
         const res = await API.put(`/products/${editingProduct._id}`, payload);
         if (res.data.success) {
           showToast('Product updated successfully!');
@@ -268,9 +259,6 @@ const Products = () => {
         }
       } else {
         // Add flow
-        payload.initialStock = Number(formInitialStock);
-        payload.stockQuantity = Number(formInitialStock);
-        payload.warehouseId = formWarehouse || undefined;
         payload.code = formCode || undefined;
         payload.barcodeValue = formBarcodeValue || undefined;
         
@@ -669,62 +657,7 @@ const Products = () => {
                 />
               </div>
 
-              {/* Initial stock settings (Only for Add Products) */}
-              {!editingProduct && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Initial Stock Quantity</label>
-                    <input
-                      type="number"
-                      value={formInitialStock}
-                      onChange={(e) => {
-                        setFormInitialStock(e.target.value);
-                        setFormCurrentStock(e.target.value);
-                      }}
-                      placeholder="e.g. 50"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Warehouse</label>
-                    <select
-                      value={formWarehouse}
-                      onChange={(e) => setFormWarehouse(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                    >
-                      {warehouses.map(wh => (
-                        <option key={wh._id} value={wh._id}>{wh.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
 
-              {/* Edit Product Stock fields */}
-              {editingProduct && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Initial Stock (Supplier Given)</label>
-                    <input
-                      type="number"
-                      value={formInitialStock}
-                      onChange={(e) => setFormInitialStock(e.target.value)}
-                      placeholder="Initial stock quantity"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Update Stock (Current Stock)</label>
-                    <input
-                      type="number"
-                      value={formCurrentStock}
-                      onChange={(e) => setFormCurrentStock(e.target.value)}
-                      placeholder="Current stock quantity"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
-                    />
-                  </div>
-                </>
-              )}
 
               {/* Alert stock qty (always editable now) */}
               <div className="space-y-1">
