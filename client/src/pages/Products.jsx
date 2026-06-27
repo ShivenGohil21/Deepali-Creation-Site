@@ -484,6 +484,7 @@ const Products = () => {
                 <th className="px-6 py-3.5">Brand</th>
                 <th className="px-6 py-3.5">Cost Price</th>
                 <th className="px-6 py-3.5">Selling Price</th>
+                <th className="px-6 py-3.5">Barcode No</th>
                 <th className="px-6 py-3.5 text-center">In Stock</th>
                 <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
@@ -491,14 +492,14 @@ const Products = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-12">
+                  <td colSpan="11" className="text-center py-12">
                     <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                     <span>Loading products catalogue...</span>
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-12 text-slate-400">
+                  <td colSpan="11" className="text-center py-12 text-slate-400">
                     No matching products found. Add products to populate the list.
                   </td>
                 </tr>
@@ -520,6 +521,7 @@ const Products = () => {
                     <td className="px-6 py-3.5 text-slate-400">{p.brand?.name || 'N/A'}</td>
                     <td className="px-6 py-3.5 text-slate-400">₹{p.costPrice.toFixed(2)}</td>
                     <td className="px-6 py-3.5 font-bold text-slate-850 dark:text-slate-100">₹{p.sellingPrice.toFixed(2)}</td>
+                    <td className="px-6 py-3.5 font-mono text-[11px] text-slate-500">{p.barcodeValue}</td>
                     <td className="px-6 py-3.5 text-center">
                       <span className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold ${
                         p.stockQuantity <= p.alertQuantity 
@@ -530,14 +532,6 @@ const Products = () => {
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-right space-x-1.5 shrink-0 whitespace-nowrap">
-                      <button
-                        onClick={() => handleOpenBarcode(p._id)}
-                        className="p-1.5 text-slate-400 hover:text-primary-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Print Barcode Tag"
-                        id={`print-barcode-p-${p.code}`}
-                      >
-                        <Printer size={15} />
-                      </button>
                       <button
                         onClick={() => handleOpenEdit(p)}
                         className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
