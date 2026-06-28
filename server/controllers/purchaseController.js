@@ -223,10 +223,7 @@ exports.deletePurchase = async (req, res) => {
 
         if (stockIndex !== -1) {
           prevStock = product.warehouseStock[stockIndex].quantity;
-          product.warehouseStock[stockIndex].quantity -= item.quantity;
-          if (product.warehouseStock[stockIndex].quantity < 0) {
-            product.warehouseStock[stockIndex].quantity = 0;
-          }
+          product.warehouseStock[stockIndex].quantity = 0;
           newStock = product.warehouseStock[stockIndex].quantity;
         }
 
@@ -290,7 +287,8 @@ exports.updatePurchase = async (req, res) => {
     grandTotal,
     paymentStatus,
     amountPaid,
-    date
+    date,
+    itemsUpdated
   } = req.body;
 
   try {
@@ -308,19 +306,22 @@ exports.updatePurchase = async (req, res) => {
       purchase.purchaseNumber = purchaseNumber;
     }
 
-    // --- STEP 1: REVERT OLD VALUES ---
-    // Revert old warehouse stock
-    for (const item of purchase.items) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        const stockIndex = product.warehouseStock.findIndex(
-          (s) => s.warehouse.toString() === purchase.warehouse.toString()
-        );
-        if (stockIndex !== -1) {
-          product.warehouseStock[stockIndex].quantity -= item.quantity;
-          if (product.warehouseStock[stockIndex].quantity < 0) product.warehouseStock[stockIndex].quantity = 0;
-          product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
-          await product.save();
+    const shouldUpdateItems = itemsUpdated !== false;
+
+    if (shouldUpdateItems) {
+      // --- STEP 1: REVERT OLD VALUES ---
+      // Revert old warehouse stock
+      for (const item of purchase.items) {
+        const product = await Product.findById(item.product);
+        if (product) {
+          const stockIndex = product.warehouseStock.findIndex(
+            (s) => s.warehouse && s.warehouse.toString() === purchase.warehouse.toString()
+          );
+          if (stockIndex !== -1) {
+            product.warehouseStock[stockIndex].quantity = 0;
+            product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
+            await product.save();
+          }
         }
       }
     }
@@ -359,56 +360,66 @@ exports.updatePurchase = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Supplier not found or specified' });
     }
 
-    for (const item of items) {
-      const { productId, costPrice, quantity } = item;
-      const qty = Number(quantity);
-      const cost = Number(costPrice);
+    if (shouldUpdateItems) {
+      for (const item of items) {
+        const { productId, costPrice, quantity } = item;
+        const qty = Number(quantity);
+        const cost = Number(costPrice);
 
-      const product = await Product.findById(productId);
-      if (!product) {
-        return res.status(404).json({ success: false, message: `Product not found: ${productId}` });
+        const product = await Product.findById(productId);
+        if (!product) {
+          return res.status(404).json({ success: false, message: `Product not found: ${productId}` });
+        }
+
+        // Add to new warehouse
+        const stockIndex = product.warehouseStock.findIndex(
+          (s) => s.warehouse && s.warehouse.toString() === warehouseId
+        );
+
+        let prevStock = 0;
+        let newStock = qty;
+
+        if (stockIndex !== -1) {
+          prevStock = product.warehouseStock[stockIndex].quantity;
+          product.warehouseStock[stockIndex].quantity = qty;
+          newStock = product.warehouseStock[stockIndex].quantity;
+        } else {
+          product.warehouseStock.push({ warehouse: warehouseId, quantity: qty });
+        }
+
+        product.costPrice = cost;
+        product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
+        await product.save();
+
+        // Log Inventory inward movement
+        const log = new InventoryLog({
+          product: product._id,
+          warehouse: warehouseId,
+          type: 'Stock In',
+          quantity: qty,
+          previousStock: prevStock,
+          newStock: newStock,
+          referenceId: purchase.purchaseNumber,
+          notes: `Purchase Updated: ${purchase.purchaseNumber}`,
+          createdBy: req.user ? req.user.id : null
+        });
+        await log.save();
+
+        processedItems.push({
+          product: productId,
+          costPrice: cost,
+          quantity: qty,
+          total: cost * qty
+        });
       }
-
-      // Add to new warehouse
-      const stockIndex = product.warehouseStock.findIndex(
-        (s) => s.warehouse.toString() === warehouseId
-      );
-
-      let prevStock = 0;
-      let newStock = qty;
-
-      if (stockIndex !== -1) {
-        prevStock = product.warehouseStock[stockIndex].quantity;
-        product.warehouseStock[stockIndex].quantity += qty;
-        newStock = product.warehouseStock[stockIndex].quantity;
-      } else {
-        product.warehouseStock.push({ warehouse: warehouseId, quantity: qty });
-      }
-
-      product.costPrice = cost;
-      product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
-      await product.save();
-
-      // Log Inventory inward movement
-      const log = new InventoryLog({
-        product: product._id,
-        warehouse: warehouseId,
-        type: 'Stock In',
-        quantity: qty,
-        previousStock: prevStock,
-        newStock: newStock,
-        referenceId: purchase.purchaseNumber,
-        notes: `Purchase Updated: ${purchase.purchaseNumber}`,
-        createdBy: req.user ? req.user.id : null
-      });
-      await log.save();
-
-      processedItems.push({
-        product: productId,
-        costPrice: cost,
-        quantity: qty,
-        total: cost * qty
-      });
+    } else {
+      // Preserve existing items
+      processedItems.push(...purchase.items.map(it => ({
+        product: it.product,
+        costPrice: it.costPrice,
+        quantity: it.quantity,
+        total: it.total || (it.costPrice * it.quantity)
+      })));
     }
 
     // Adjust supplier balance with new outstanding

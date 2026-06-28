@@ -139,9 +139,6 @@ const Products = () => {
       if (brandRes.data.success) setBrands(brandRes.data.data);
       if (whRes.data.success) {
         setWarehouses(whRes.data.data);
-        if (whRes.data.data.length > 0) {
-          setFormWarehouse(whRes.data.data[0]._id);
-        }
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -256,7 +253,6 @@ const Products = () => {
         // Edit flow
         payload.code = formCode || undefined;
         payload.barcodeValue = formBarcodeValue || undefined;
-        payload.stockQuantity = Number(formStockQty);
         const res = await API.put(`/products/${editingProduct._id}`, payload);
         if (res.data.success) {
           showToast('Product updated successfully!');
@@ -698,20 +694,6 @@ const Products = () => {
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
                 />
               </div>
-
-              {editingProduct && (
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Stock Quantity (Pcs) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formStockQty}
-                    onChange={(e) => setFormStockQty(e.target.value)}
-                    placeholder="Current stock level"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-bold"
-                  />
-                </div>
-              )}
 
               {/* Description */}
               <div className="space-y-1 md:col-span-2">

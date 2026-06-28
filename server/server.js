@@ -9,7 +9,10 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to Database
-connectDB();
+connectDB().then(() => {
+  const reconcileStocks = require('./utils/stockReconciler');
+  reconcileStocks();
+});
 
 const app = express();
 

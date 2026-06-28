@@ -332,18 +332,98 @@ const Purchases = () => {
     }
   };
 
+  const handleSavePurchaseMetadataOnly = async () => {
+    if ((!selectedSupplier && !supplierSearch) || !selectedWarehouse) {
+      showMsg('Please complete warehouse and supplier details', 'error');
+      return;
+    }
+
+    const payload = {
+      supplierId: selectedSupplier || supplierSearch,
+      warehouseId: selectedWarehouse,
+      items: [], // Ignored by backend because itemsUpdated is false
+      subTotal,
+      discount: discountAmount,
+      tax: taxAmount,
+      grandTotal,
+      paymentStatus,
+      amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
+      paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
+      date: purchaseDate,
+      purchaseNumber: purchaseNumber || undefined,
+      itemsUpdated: false
+    };
+
+    try {
+      setSubmitting(true);
+      const res = await API.put(`/purchases/${editPurchaseId}`, payload);
+      if (res.data.success) {
+        showMsg('Invoice details updated successfully!');
+        await fetchPurchasesData();
+        resetForm();
+      }
+    } catch (err) {
+      showMsg(err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSavePurchaseItemsOnly = async () => {
+    // Allow saving with 0 items — this resets all product stocks to 0
+    const payload = {
+      supplierId: selectedSupplier || supplierSearch,
+      warehouseId: selectedWarehouse,
+      items: purchaseItems.map(it => ({
+        productId: it.productObj?._id,
+        costPrice: it.costPrice,
+        quantity: it.quantity
+      })),
+      subTotal,
+      discount: discountAmount,
+      tax: taxAmount,
+      grandTotal,
+      paymentStatus,
+      amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
+      paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
+      date: purchaseDate,
+      purchaseNumber: purchaseNumber || undefined,
+      itemsUpdated: true
+    };
+
+    try {
+      setSubmitting(true);
+      const res = await API.put(`/purchases/${editPurchaseId}`, payload);
+      if (res.data.success) {
+        const msg = purchaseItems.length === 0
+          ? 'All items removed — product quantities reset to 0 in Product list!'
+          : 'Purchase items and warehouse quantities updated successfully!';
+        showMsg(msg);
+        await fetchPurchasesData();
+        resetForm();
+      }
+    } catch (err) {
+      showMsg(err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleStartEdit = (p) => {
     setEditPurchaseId(p._id);
     setPurchaseNumber(p.purchaseNumber || '');
     setSelectedSupplier(p.supplier?._id || p.supplier || '');
     setSelectedWarehouse(p.warehouse?._id || p.warehouse || '');
     setPurchaseItems(
-      p.items.map((it) => ({
-        productObj: it.product,
-        costPrice: it.costPrice,
-        quantity: it.quantity,
-        total: it.total
-      }))
+      p.items.map((it) => {
+        const currentQty = (it.product && it.product.stockQuantity !== undefined) ? it.product.stockQuantity : it.quantity;
+        return {
+          productObj: it.product,
+          costPrice: it.costPrice,
+          quantity: currentQty,
+          total: it.costPrice * currentQty
+        };
+      })
     );
     setPaymentStatus(p.paymentStatus || 'Paid');
     setAmountPaid(p.amountPaid || '');
@@ -1038,6 +1118,27 @@ const Purchases = () => {
                 </tbody>
               </table>
             </div>
+
+            {editPurchaseId && (
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleSavePurchaseItemsOnly}
+                  className={`bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  id="submit-purchase-items-btn"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Updating Items...</span>
+                    </>
+                  ) : (
+                    <span>Update Restock Items & Quantities</span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Supplier, Warehouse and Invoice Details (4 Cols) */}
@@ -1250,28 +1351,47 @@ const Purchases = () => {
                       handleOpenReturn(originalPur);
                     }
                   }}
-                  className="w-full bg-purple-650 hover:bg-purple-550 text-white font-bold py-2.5 rounded-xl text-center shadow-md active:scale-95 transition-all mb-2"
+                  className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-center shadow-md active:scale-95 transition-all mb-2"
                   id="edit-return-items-btn"
                 >
                   Return Items to Supplier
                 </button>
               )}
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                id="submit-purchase-order-btn"
-              >
-                {submitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <span>{editPurchaseId ? 'Update Purchase Order' : 'Post Restock Purchase'}</span>
-                )}
-              </button>
+               {editPurchaseId ? (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleSavePurchaseMetadataOnly}
+                  className={`w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  id="submit-purchase-metadata-btn"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Update Invoice Details Only</span>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  id="submit-purchase-order-btn"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <span>Post Restock Purchase</span>
+                  )}
+                </button>
+              )}
             </form>
           </div>
         </div>
