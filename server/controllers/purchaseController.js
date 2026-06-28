@@ -175,9 +175,9 @@ exports.createPurchase = async (req, res) => {
       grandTotal: Number(grandTotal),
       paymentStatus: paymentStatus || 'Unpaid',
       amountPaid: Number(amountPaid) || 0,
-      paymentDate: req.body.paymentDate ? new Date(req.body.paymentDate) : null,
+      paymentDate: (req.body.paymentDate && req.body.paymentDate.toString().trim() !== '') ? new Date(req.body.paymentDate) : null,
       createdBy: req.user ? req.user.id : null,
-      date: req.body.date ? new Date(req.body.date) : Date.now()
+      date: (req.body.date && req.body.date.toString().trim() !== '') ? new Date(req.body.date) : Date.now()
     });
 
     await purchase.save();
@@ -428,8 +428,8 @@ exports.updatePurchase = async (req, res) => {
     purchase.grandTotal = Number(grandTotal);
     purchase.paymentStatus = paymentStatus || 'Unpaid';
     purchase.amountPaid = Number(amountPaid) || 0;
-    purchase.paymentDate = req.body.paymentDate ? new Date(req.body.paymentDate) : null;
-    if (date) {
+    purchase.paymentDate = (req.body.paymentDate && req.body.paymentDate.toString().trim() !== '') ? new Date(req.body.paymentDate) : null;
+    if (date && date.toString().trim() !== '') {
       purchase.date = new Date(date);
     }
 

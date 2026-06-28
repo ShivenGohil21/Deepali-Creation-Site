@@ -129,6 +129,7 @@ const Purchases = () => {
   const [paymentStatus, setPaymentStatus] = useState('Paid');
   const [amountPaid, setAmountPaid] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [purchaseTax, setPurchaseTax] = useState(0);
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [supplierSearch, setSupplierSearch] = useState('');
@@ -263,11 +264,13 @@ const Purchases = () => {
   // Calculate totals
   const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
   const discountAmount = subTotal * (Number(discount || 0) / 100);
-  const grandTotal = Math.max(0, subTotal - discountAmount);
+  const taxAmount = (subTotal - discountAmount) * (Number(purchaseTax || 0) / 100);
+  const grandTotal = Math.max(0, subTotal - discountAmount + taxAmount);
 
   const resetForm = () => {
     setPurchaseItems([]);
     setDiscount(0);
+    setPurchaseTax(0);
     setAmountPaid('');
     setPurchaseDate(new Date().toISOString().split('T')[0]);
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -295,6 +298,7 @@ const Purchases = () => {
       })),
       subTotal,
       discount: discountAmount,
+      tax: taxAmount,
       grandTotal,
       paymentStatus,
       amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
@@ -342,6 +346,9 @@ const Purchases = () => {
     const editSubTotal = p.items.reduce((sum, it) => sum + (it.total || (it.costPrice * it.quantity)), 0);
     const discountPercent = editSubTotal > 0 ? (p.discount / editSubTotal) * 100 : 0;
     setDiscount(Number(discountPercent.toFixed(2)));
+    const discountAmt = p.discount || 0;
+    const taxPercent = (editSubTotal - discountAmt) > 0 ? (p.tax / (editSubTotal - discountAmt)) * 100 : 0;
+    setPurchaseTax(Number(taxPercent.toFixed(2)));
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
@@ -1106,6 +1113,21 @@ const Purchases = () => {
                 />
               </div>
 
+              {/* GST/Tax Input */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GST (%)</span>
+                <input
+                  type="number"
+                  placeholder="0"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={purchaseTax}
+                  onChange={(e) => setPurchaseTax(Math.max(0, Math.min(100, Number(e.target.value))))}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
+                />
+              </div>
+
               {/* Payment Status */}
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Status</span>
@@ -1166,6 +1188,10 @@ const Purchases = () => {
                 <div className="flex justify-between">
                   <span className="text-slate-450">Discount ({discount}%):</span>
                   <span className="text-red-500 font-semibold">-₹{discountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-450">GST ({purchaseTax}%):</span>
+                  <span className="text-emerald-500 font-semibold">+₹{taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 text-xs font-bold text-slate-900 dark:text-white">
                   <span>Grand Total:</span>

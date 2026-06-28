@@ -426,17 +426,26 @@ exports.updateProduct = async (req, res) => {
       product.stockQuantity = newStock;
       
       let targetWarehouseId = null;
-      if (product.warehouseStock && product.warehouseStock.length > 0) {
-        product.warehouseStock[0].quantity = Math.max(0, product.warehouseStock[0].quantity + diff);
-        targetWarehouseId = product.warehouseStock[0].warehouse;
+      if (newStock === 0) {
+        if (product.warehouseStock && product.warehouseStock.length > 0) {
+          product.warehouseStock.forEach(s => {
+            s.quantity = 0;
+          });
+          targetWarehouseId = product.warehouseStock[0].warehouse;
+        }
       } else {
-        const defaultWh = await Warehouse.findOne();
-        if (defaultWh) {
-          product.warehouseStock = [{
-            warehouse: defaultWh._id,
-            quantity: newStock
-          }];
-          targetWarehouseId = defaultWh._id;
+        if (product.warehouseStock && product.warehouseStock.length > 0) {
+          product.warehouseStock[0].quantity = Math.max(0, product.warehouseStock[0].quantity + diff);
+          targetWarehouseId = product.warehouseStock[0].warehouse;
+        } else {
+          const defaultWh = await Warehouse.findOne();
+          if (defaultWh) {
+            product.warehouseStock = [{
+              warehouse: defaultWh._id,
+              quantity: newStock
+            }];
+            targetWarehouseId = defaultWh._id;
+          }
         }
       }
       
