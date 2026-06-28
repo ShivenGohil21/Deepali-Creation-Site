@@ -164,6 +164,7 @@ const Purchases = () => {
   const [tempCostPrice, setTempCostPrice] = useState('');
   const [tempQty, setTempQty] = useState('');
   const qtyInputRef = useRef(null);
+  const scanInputRef = useRef(null);
 
   // Toast
   const [msg, setMsg] = useState({ text: '', type: 'success' });
@@ -243,6 +244,9 @@ const Purchases = () => {
     setTempCostPrice('');
     setTempQty('');
     setProdSearch('');
+    setTimeout(() => {
+      scanInputRef.current?.focus();
+    }, 50);
   };
 
   const handleRemoveItem = (idx) => {
@@ -827,9 +831,35 @@ const Purchases = () => {
               <div className="space-y-1 md:col-span-3">
                 <span>Search / Scan Code</span>
                 <input
+                  ref={scanInputRef}
                   type="text"
                   placeholder="Type code or scan..."
                   value={prodSearch}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (tempProduct) {
+                        qtyInputRef.current?.focus();
+                      } else {
+                        const cleanedQuery = prodSearch.trim().toLowerCase();
+                        if (cleanedQuery) {
+                          const exactMatch = products.find(p => 
+                            p.code.toLowerCase() === cleanedQuery || 
+                            (p.barcodeValue && p.barcodeValue.toLowerCase() === cleanedQuery) ||
+                            (!isNaN(parseInt(p.code, 10)) && !isNaN(parseInt(cleanedQuery, 10)) && parseInt(p.code, 10) === parseInt(cleanedQuery, 10))
+                          );
+                          if (exactMatch) {
+                            setTempProduct(exactMatch._id);
+                            setTempCostPrice(exactMatch.costPrice);
+                            setTempQty('');
+                            setTimeout(() => {
+                              qtyInputRef.current?.focus();
+                            }, 50);
+                          }
+                        }
+                      }
+                    }
+                  }}
                   onChange={(e) => {
                     const query = e.target.value;
                     setProdSearch(query);
@@ -902,6 +932,12 @@ const Purchases = () => {
                   step="0.01"
                   placeholder="Cost price"
                   value={tempCostPrice}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      qtyInputRef.current?.focus();
+                    }
+                  }}
                   onChange={(e) => setTempCostPrice(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
@@ -914,6 +950,12 @@ const Purchases = () => {
                   ref={qtyInputRef}
                   placeholder="Qty"
                   value={tempQty}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddPurchaseItem();
+                    }
+                  }}
                   onChange={(e) => setTempQty(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
