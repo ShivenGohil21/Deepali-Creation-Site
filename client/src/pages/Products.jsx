@@ -55,6 +55,8 @@ const Products = () => {
   const [formPrefix, setFormPrefix] = useState('D'); // D, SH, TS
   const [formCode, setFormCode] = useState(''); // If empty, backend auto-generates
   const [formBarcodeValue, setFormBarcodeValue] = useState(''); // If empty, uses code
+  const [formStockQty, setFormStockQty] = useState(''); // Only used in edit flow
+  const [submitting, setSubmitting] = useState(false);
 
   // Inline Add Category/Brand
   const [newCatName, setNewCatName] = useState('');
@@ -172,6 +174,7 @@ const Products = () => {
     setFormPrefix('D');
     setFormCode('');
     setFormBarcodeValue('');
+    setFormStockQty('');
     setShowAddEditModal(true);
   };
 
@@ -190,6 +193,7 @@ const Products = () => {
     setFormPrefix(product.code.match(/^[A-Za-z]+/)?.[0] || 'D');
     setFormCode(product.code);
     setFormBarcodeValue(product.barcodeValue);
+    setFormStockQty(product.stockQuantity !== undefined ? product.stockQuantity : 0);
     setShowAddEditModal(true);
   };
 
@@ -235,7 +239,7 @@ const Products = () => {
     const payload = {
       name: formName,
       category: formCategory,
-      brand: formBrand || undefined,
+      brand: formBrand || "",
       unit: formUnit,
       costPrice: Number(formCostPrice),
       sellingPrice: Number(formSellingPrice),
@@ -247,14 +251,16 @@ const Products = () => {
     };
 
     try {
+      setSubmitting(true);
       if (editingProduct) {
         // Edit flow
         payload.code = formCode || undefined;
         payload.barcodeValue = formBarcodeValue || undefined;
+        payload.stockQuantity = Number(formStockQty);
         const res = await API.put(`/products/${editingProduct._id}`, payload);
         if (res.data.success) {
           showToast('Product updated successfully!');
-          fetchInitialData();
+          await fetchInitialData();
           setShowAddEditModal(false);
         }
       } else {
@@ -265,12 +271,14 @@ const Products = () => {
         const res = await API.post('/products', payload);
         if (res.data.success) {
           showToast('Product added successfully!');
-          fetchInitialData();
+          await fetchInitialData();
           setShowAddEditModal(false);
         }
       }
     } catch (err) {
       showToast(err.message, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -287,11 +295,12 @@ const Products = () => {
     }
   };
 
-  const handleOpenBarcode = async (id) => {
+  const handleOpenBarcode = async (p) => {
     try {
-      const res = await API.get(`/products/barcode/${id}`);
+      const res = await API.get(`/products/barcode/${p._id}`);
       if (res.data.success) {
         setBarcodePrintData(res.data);
+        setPrintCopies(p.stockQuantity > 0 ? p.stockQuantity : 1);
         setShowBarcodeModal(true);
       }
     } catch (err) {
@@ -521,6 +530,14 @@ const Products = () => {
                     </td>
                     <td className="px-6 py-3.5 text-right space-x-1.5 shrink-0 whitespace-nowrap">
                       <button
+                        onClick={() => handleOpenBarcode(p)}
+                        className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        title="Print Barcode"
+                        id={`print-barcode-p-${p.code}`}
+                      >
+                        <QrCode size={15} />
+                      </button>
+                      <button
                         onClick={() => handleOpenEdit(p)}
                         className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         title="Edit details"
@@ -682,6 +699,20 @@ const Products = () => {
                 />
               </div>
 
+              {editingProduct && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Stock Quantity (Pcs) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={formStockQty}
+                    onChange={(e) => setFormStockQty(e.target.value)}
+                    placeholder="Current stock level"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-bold"
+                  />
+                </div>
+              )}
+
               {/* Description */}
               <div className="space-y-1 md:col-span-2">
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Description</label>
@@ -704,17 +735,26 @@ const Products = () => {
               <div className="md:col-span-2 border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-end space-x-2">
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => setShowAddEditModal(false)}
-                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
+                  className={`bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-semibold"
+                  disabled={submitting}
+                  className={`bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   id="product-save-btn"
                 >
-                  Save Product
+                  {submitting ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Product</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -816,23 +856,35 @@ const Products = () => {
 
             {/* Print Settings Layout */}
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Set Print Layout Copies</label>
-                <div className="flex space-x-2">
-                  {[1, 4, 40].map(num => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setPrintCopies(num)}
-                      className={`flex-1 py-1 px-3 text-xs rounded-lg font-bold transition-all ${
-                        printCopies === num 
-                          ? 'bg-primary-600 text-white shadow-md' 
-                          : 'bg-white border dark:bg-slate-900 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      {num} {num === 1 ? 'Thermal' : 'Labels'}
-                    </button>
-                  ))}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-bold text-slate-500 block mb-1">Set Print Layout Copies</label>
+                  <div className="flex space-x-2">
+                    {[1, 4, 40].map(num => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setPrintCopies(num)}
+                        className={`flex-1 py-1 px-3 text-xs rounded-lg font-bold transition-all ${
+                          printCopies === num 
+                            ? 'bg-primary-600 text-white shadow-md' 
+                            : 'bg-white border dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {num} {num === 1 ? 'Thermal' : 'Labels'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-full sm:w-28">
+                  <label className="text-xs font-bold text-slate-500 block mb-1">Custom Qty</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={printCopies}
+                    onChange={(e) => setPrintCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-primary-500 transition"
+                  />
                 </div>
               </div>
             </div>

@@ -54,14 +54,11 @@ const Login = () => {
         {/* Brand Logo & Header */}
         <div className="text-center space-y-3">
           <div className="mx-auto w-14 h-14 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-lg shadow-primary-700/20 hover:rotate-6 transition-transform">
-            DP
+            DC
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-white font-sans">
-            Deepali Shop
+            Deepali Creation
           </h2>
-          <p className="text-sm text-slate-400 font-sans">
-            Inventory & Point of Sale Management System
-          </p>
         </div>
 
 

@@ -166,6 +166,7 @@ const Purchases = () => {
 
   // Toast
   const [msg, setMsg] = useState({ text: '', type: 'success' });
+  const [submitting, setSubmitting] = useState(false);
 
   const showMsg = (text, type = 'success') => {
     setMsg({ text, type });
@@ -303,6 +304,7 @@ const Purchases = () => {
     };
 
     try {
+      setSubmitting(true);
       let res;
       if (editPurchaseId) {
         res = await API.put(`/purchases/${editPurchaseId}`, payload);
@@ -312,11 +314,13 @@ const Purchases = () => {
 
       if (res.data.success) {
         showMsg(editPurchaseId ? 'Stock purchase updated successfully! Inventory updated.' : 'Stock purchased successfully! Inventory updated.');
-        fetchPurchasesData();
+        await fetchPurchasesData();
         resetForm();
       }
     } catch (err) {
       showMsg(err.message, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1187,10 +1191,18 @@ const Purchases = () => {
 
               <button
                 type="submit"
-                className="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all"
+                disabled={submitting}
+                className={`w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 id="submit-purchase-order-btn"
               >
-                {editPurchaseId ? 'Update Purchase Order' : 'Post Restock Purchase'}
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>{editPurchaseId ? 'Update Purchase Order' : 'Post Restock Purchase'}</span>
+                )}
               </button>
             </form>
           </div>

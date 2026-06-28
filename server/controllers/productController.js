@@ -101,7 +101,7 @@ exports.getProducts = async (req, res) => {
     const products = await Product.find(query)
       .populate('category', 'name')
       .populate('brand', 'name')
-      .sort({ updatedAt: -1 });
+      .sort({ barcodeValue: 1 });
 
     res.status(200).json({
       success: true,
