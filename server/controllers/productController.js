@@ -41,7 +41,7 @@ const getBarcodeBase64 = async (text, scale = 3, includetext = true) => {
         bcid: 'code128',
         text: text,
         scale: scale,
-        height: 10,
+        height: 16,
         includetext: includetext,
         textxalign: 'center'
       },
@@ -793,7 +793,7 @@ exports.getBulkBarcodeImages = async (req, res) => {
     const results = [];
     for (const product of products) {
       try {
-        const base64Barcode = await getBarcodeBase64(product.barcodeValue, req.body.scale || 2, false);
+        const base64Barcode = await getBarcodeBase64(product.barcodeValue, req.body.scale || 3, false);
         results.push({
           productId: product._id,
           barcodeImage: base64Barcode,

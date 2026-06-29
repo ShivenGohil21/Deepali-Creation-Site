@@ -223,7 +223,7 @@ exports.deletePurchase = async (req, res) => {
 
         if (stockIndex !== -1) {
           prevStock = product.warehouseStock[stockIndex].quantity;
-          product.warehouseStock[stockIndex].quantity = 0;
+          product.warehouseStock[stockIndex].quantity = Math.max(0, product.warehouseStock[stockIndex].quantity - item.quantity);
           newStock = product.warehouseStock[stockIndex].quantity;
         }
 
@@ -318,7 +318,7 @@ exports.updatePurchase = async (req, res) => {
             (s) => s.warehouse && s.warehouse.toString() === purchase.warehouse.toString()
           );
           if (stockIndex !== -1) {
-            product.warehouseStock[stockIndex].quantity = 0;
+            product.warehouseStock[stockIndex].quantity = Math.max(0, product.warehouseStock[stockIndex].quantity - item.quantity);
             product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
             await product.save();
           }
@@ -381,7 +381,7 @@ exports.updatePurchase = async (req, res) => {
 
         if (stockIndex !== -1) {
           prevStock = product.warehouseStock[stockIndex].quantity;
-          product.warehouseStock[stockIndex].quantity = qty;
+          product.warehouseStock[stockIndex].quantity += qty;
           newStock = product.warehouseStock[stockIndex].quantity;
         } else {
           product.warehouseStock.push({ warehouse: warehouseId, quantity: qty });

@@ -7,7 +7,7 @@ const BARCODE_STYLES = {
     name: '40 per sheet (a4) (1.799" x 1.003")',
     cols: 4,
     height: '25mm',
-    imgHeight: '9mm',
+    imgHeight: '12mm',
     fontSizeName: '7.5px',
     fontSizeNo: '7px',
     fontSizePrice: '8px',
@@ -19,7 +19,7 @@ const BARCODE_STYLES = {
     name: '30 per sheet (2.625" x 1")',
     cols: 3,
     height: '25.4mm',
-    imgHeight: '10mm',
+    imgHeight: '13mm',
     fontSizeName: '8.5px',
     fontSizeNo: '7.5px',
     fontSizePrice: '9px',
@@ -31,7 +31,7 @@ const BARCODE_STYLES = {
     name: '24 per sheet (a4) (2.48" x 1.334")',
     cols: 3,
     height: '34mm',
-    imgHeight: '14mm',
+    imgHeight: '18mm',
     fontSizeName: '9.5px',
     fontSizeNo: '8px',
     fontSizePrice: '10px',
@@ -43,7 +43,7 @@ const BARCODE_STYLES = {
     name: '20 per sheet (4" x 1")',
     cols: 2,
     height: '25.4mm',
-    imgHeight: '10mm',
+    imgHeight: '13mm',
     fontSizeName: '9px',
     fontSizeNo: '8px',
     fontSizePrice: '10px',
@@ -55,7 +55,7 @@ const BARCODE_STYLES = {
     name: '18 per sheet (a4) (2.5" x 1.835")',
     cols: 3,
     height: '46.5mm',
-    imgHeight: '20mm',
+    imgHeight: '25mm',
     fontSizeName: '11px',
     fontSizeNo: '9px',
     fontSizePrice: '11.5px',
@@ -67,7 +67,7 @@ const BARCODE_STYLES = {
     name: '14 per sheet (4" x 1.33")',
     cols: 2,
     height: '34mm',
-    imgHeight: '14mm',
+    imgHeight: '18mm',
     fontSizeName: '10.5px',
     fontSizeNo: '9px',
     fontSizePrice: '11px',
@@ -79,7 +79,7 @@ const BARCODE_STYLES = {
     name: '12 per sheet (a4) (2.5" x 2.834")',
     cols: 3,
     height: '72mm',
-    imgHeight: '32mm',
+    imgHeight: '42mm',
     fontSizeName: '12px',
     fontSizeNo: '10px',
     fontSizePrice: '13px',
@@ -91,7 +91,7 @@ const BARCODE_STYLES = {
     name: '10 per sheet (4" x 2")',
     cols: 2,
     height: '50.8mm',
-    imgHeight: '22mm',
+    imgHeight: '28mm',
     fontSizeName: '12px',
     fontSizeNo: '10px',
     fontSizePrice: '13px',
@@ -100,15 +100,15 @@ const BARCODE_STYLES = {
     isA4: false
   },
   'continuous': {
-    name: 'Continuous feed',
+    name: 'Continuous feed (3.1cm x 2.3cm)',
     cols: 1,
-    height: 'auto',
-    imgHeight: '10mm',
-    fontSizeName: '9px',
-    fontSizeNo: '8px',
-    fontSizePrice: '10px',
+    height: '23mm',
+    imgHeight: '11mm',
+    fontSizeName: '7px',
+    fontSizeNo: '6.5px',
+    fontSizePrice: '7.5px',
     gap: '0px',
-    padding: '6px',
+    padding: '3px',
     isA4: false
   }
 };
@@ -416,7 +416,7 @@ const Purchases = () => {
     setSelectedWarehouse(p.warehouse?._id || p.warehouse || '');
     setPurchaseItems(
       p.items.map((it) => {
-        const currentQty = (it.product && it.product.stockQuantity !== undefined) ? it.product.stockQuantity : it.quantity;
+        const currentQty = it.quantity;
         return {
           productObj: it.product,
           costPrice: it.costPrice,
@@ -1923,9 +1923,9 @@ const Purchases = () => {
                               key={`${itemIdx}-${copyIdx}`}
                               className="border border-slate-450 rounded text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
                               style={printStyle === 'continuous' ? {
-                                width: '2in',
-                                height: '1.2in',
-                                padding: '8px',
+                                width: '3.1cm',
+                                height: '2.3cm',
+                                padding: BARCODE_STYLES[printStyle].padding,
                                 boxSizing: 'border-box',
                                 pageBreakInside: 'avoid',
                                 breakInside: 'avoid'
@@ -2012,29 +2012,48 @@ const Purchases = () => {
                   Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                     <div 
                       key={`print-thermal-${itemIdx}-${copyIdx}`}
-                      className="flex justify-center items-center p-2 bg-white text-black w-[2.2in] h-[1.2in] mx-auto"
+                      className="flex justify-center items-center p-0.5 bg-white text-black mx-auto"
                       style={{
+                        width: '3.1cm',
+                        height: '2.3cm',
                         pageBreakAfter: 'always',
                         pageBreakInside: 'avoid',
                         breakInside: 'avoid'
                       }}
                     >
-                      <div className="border border-black p-2 text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border">
-                        <p className="font-extrabold tracking-wider uppercase text-black leading-none text-[9px]">
+                      <div 
+                        className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border"
+                        style={{ padding: BARCODE_STYLES[printStyle].padding }}
+                      >
+                        <p 
+                          className="font-extrabold tracking-wider uppercase text-black leading-none truncate w-full"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                        >
                           {item.shopName}
                         </p>
-                        <p className="text-[9px] font-bold text-black leading-none truncate max-w-full">
+                        <p 
+                          className="font-bold text-black leading-none truncate max-w-full"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                        >
                           {item.productName} {item.productColor ? `(${item.productColor})` : ''}
                         </p>
                         <img 
                           src={item.barcodeImage} 
                           alt="Barcode" 
-                          className="h-10 object-contain max-w-[95%] mx-auto"
-                          style={{ imageRendering: 'pixelated' }}
+                          className="object-contain max-w-[95%] mx-auto"
+                          style={{ 
+                            height: BARCODE_STYLES[printStyle].imgHeight,
+                            imageRendering: 'pixelated'
+                          }}
                         />
-                        <div className="flex items-center justify-between text-[8px] font-bold w-full px-1 text-black font-mono">
+                        <div 
+                          className="flex items-center justify-between font-bold w-full px-1 text-black font-mono leading-none"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
+                        >
                           <span>No: {item.barcodeValue}</span>
-                          <span className="font-extrabold text-[10px]">₹{Number(item.customPrice || 0).toFixed(2)}</span>
+                          <span className="font-extrabold" style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}>
+                            ₹{Number(item.customPrice || 0).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
