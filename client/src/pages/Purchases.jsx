@@ -311,7 +311,7 @@ const Purchases = () => {
       supplierId: selectedSupplier || supplierSearch,
       warehouseId: selectedWarehouse,
       items: purchaseItems.map(it => ({
-        productId: it.productObj?._id,
+        productId: it.productObj?._id || it.productObj,
         costPrice: it.costPrice,
         quantity: it.quantity
       })),
