@@ -51,6 +51,15 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/auditlogs', require('./routes/auditLogRoutes'));
 app.use('/api/adjustments', require('./routes/adjustmentRoutes'));
 
+// Catch-all for undefined API routes to return JSON instead of HTML 404
+app.all('/api/*', (req, res) => {
+  console.warn(`[API 404] Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ 
+    success: false, 
+    message: `Backend API route not found: ${req.method} ${req.originalUrl}` 
+  });
+});
+
 // Serve Static Frontend Assets (Production configuration)
 const clientBuildPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientBuildPath));

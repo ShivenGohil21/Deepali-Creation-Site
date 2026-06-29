@@ -110,7 +110,8 @@ exports.createPurchase = async (req, res) => {
 
       const product = await Product.findById(productId);
       if (!product) {
-        return res.status(404).json({ success: false, message: `Product not found: ${productId}` });
+        console.warn(`[Create Purchase] Product not found: ${productId}`);
+        return res.status(400).json({ success: false, message: `Product not found in database: ${productId}. It may have been deleted.` });
       }
 
       // Check or create stock index in product warehouseStock
