@@ -818,3 +818,14 @@ exports.getBulkBarcodeImages = async (req, res) => {
   }
 };
 
+const reconcileStocks = require('../utils/stockReconciler');
+
+exports.reconcileProductStocksRoute = async (req, res) => {
+  try {
+    await reconcileStocks();
+    res.status(200).json({ success: true, message: 'All product stock levels reconciled successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

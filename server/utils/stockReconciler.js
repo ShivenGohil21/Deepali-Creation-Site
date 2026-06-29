@@ -115,4 +115,90 @@ const reconcileStocks = async () => {
   }
 };
 
+const reconcileProductStock = async (productId) => {
+  try {
+    const product = await Product.findById(productId);
+    if (!product) return;
+
+    const warehouseStockMap = {};
+
+    // 1. Purchases (adds stock)
+    const purchases = await Purchase.find({ 'items.product': productId });
+    for (const pur of purchases) {
+      const whId = pur.warehouse.toString();
+      const item = pur.items.find(it => it.product.toString() === productId.toString());
+      if (item) {
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
+      }
+    }
+
+    // 2. Purchase Returns (subtracts stock)
+    const purReturns = await PurchaseReturn.find({ 'items.product': productId });
+    for (const ret of purReturns) {
+      const whId = ret.warehouse.toString();
+      const item = ret.items.find(it => it.product.toString() === productId.toString());
+      if (item) {
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
+      }
+    }
+
+    // 3. POS Sales (subtracts stock)
+    const sales = await Sale.find({ 'items.product': productId });
+    for (const sale of sales) {
+      const whId = sale.warehouse.toString();
+      const item = sale.items.find(it => it.product.toString() === productId.toString());
+      if (item) {
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
+      }
+    }
+
+    // 4. Sale Returns (adds stock)
+    const saleReturns = await SaleReturn.find({ 'items.product': productId });
+    for (const ret of saleReturns) {
+      const whId = ret.warehouse.toString();
+      const item = ret.items.find(it => it.product.toString() === productId.toString());
+      if (item) {
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
+      }
+    }
+
+    // 5. Stock Adjustments (adds/subtracts stock)
+    const adjustments = await Adjustment.find({ 'items.product': productId });
+    for (const adj of adjustments) {
+      const whId = adj.warehouse.toString();
+      const item = adj.items.find(it => it.product.toString() === productId.toString());
+      if (item) {
+        const adjQty = Number(item.quantity || 0);
+        if (adj.type === 'Addition') {
+          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + adjQty;
+        } else if (adj.type === 'Deduction') {
+          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - adjQty;
+        }
+      }
+    }
+
+    // Rebuild warehouseStock arrays
+    const newWarehouseStock = [];
+    let totalStock = 0;
+
+    for (const [whId, qty] of Object.entries(warehouseStockMap)) {
+      const finalQty = Math.max(0, qty);
+      newWarehouseStock.push({
+        warehouse: whId,
+        quantity: finalQty
+      });
+      totalStock += finalQty;
+    }
+
+    product.warehouseStock = newWarehouseStock;
+    product.stockQuantity = totalStock;
+    await product.save();
+    console.log(`[Stock Reconciliation] Reconciled stock for product ${product.code} (${product.name}) to ${totalStock}`);
+  } catch (error) {
+    console.error(`[Stock Reconciliation] Error reconciling product ${productId}:`, error);
+  }
+};
+
+reconcileStocks.reconcileProductStock = reconcileProductStock;
+
 module.exports = reconcileStocks;

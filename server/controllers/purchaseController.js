@@ -6,6 +6,7 @@ const InventoryLog = require('../models/InventoryLog');
 const Notification = require('../models/Notification');
 const PurchaseReturn = require('../models/PurchaseReturn');
 const { logAction } = require('../utils/auditLogger');
+const reconcileStocks = require('../utils/stockReconciler');
 
 exports.getPurchases = async (req, res) => {
   try {
@@ -132,6 +133,7 @@ exports.createPurchase = async (req, res) => {
       product.costPrice = cost;
       product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
       await product.save();
+      await reconcileStocks.reconcileProductStock(product._id);
 
       // Log Inventory inward movement
       const log = new InventoryLog({
@@ -229,6 +231,7 @@ exports.deletePurchase = async (req, res) => {
 
         product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
         await product.save();
+        await reconcileStocks.reconcileProductStock(product._id);
 
         // Log Stock Out reversal
         const log = new InventoryLog({
@@ -297,6 +300,15 @@ exports.updatePurchase = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Purchase not found' });
     }
 
+    const productsToReconcile = new Set();
+    if (purchase.items) {
+      for (const item of purchase.items) {
+        if (item.product) {
+          productsToReconcile.add(item.product.toString());
+        }
+      }
+    }
+
     // Check if updating purchaseNumber and verify uniqueness
     if (purchaseNumber && purchaseNumber !== purchase.purchaseNumber) {
       const purchaseExists = await Purchase.findOne({ purchaseNumber });
@@ -363,6 +375,9 @@ exports.updatePurchase = async (req, res) => {
     if (shouldUpdateItems) {
       for (const item of items) {
         const { productId, costPrice, quantity } = item;
+        if (productId) {
+          productsToReconcile.add(productId.toString());
+        }
         const qty = Number(quantity);
         const cost = Number(costPrice);
 
@@ -445,6 +460,10 @@ exports.updatePurchase = async (req, res) => {
     }
 
     await purchase.save();
+
+    for (const prodId of productsToReconcile) {
+      await reconcileStocks.reconcileProductStock(prodId);
+    }
 
     await logAction(
       req.user ? req.user.id : null,

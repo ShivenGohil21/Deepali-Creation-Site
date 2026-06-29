@@ -11,7 +11,8 @@ const {
   getProductBarcodeImage,
   importProductsExcel,
   bulkStockAdjustment,
-  getBulkBarcodeImages
+  getBulkBarcodeImages,
+  reconcileProductStocksRoute
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -48,6 +49,9 @@ router.route('/import')
 
 router.route('/bulk-adjust')
   .post(protect, authorize('Super Admin', 'Admin', 'Warehouse Staff'), bulkStockAdjustment);
+
+router.route('/reconcile')
+  .post(protect, authorize('Super Admin', 'Admin', 'Manager'), reconcileProductStocksRoute);
 
 router.route('/:id')
   .get(protect, getProductById)

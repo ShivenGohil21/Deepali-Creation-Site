@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Grid,
   CheckCircle,
-  QrCode
+  QrCode,
+  RefreshCw
 } from 'lucide-react';
 
 const Products = () => {
@@ -154,6 +155,21 @@ const Products = () => {
   const showToast = (text, type = 'success') => {
     setMsg({ text, type });
     setTimeout(() => setMsg({ text: '', type: '' }), 5000);
+  };
+
+  const handleSyncQuantities = async () => {
+    try {
+      setLoading(true);
+      const res = await API.post('/products/reconcile');
+      if (res.data.success) {
+        showToast('All product stock levels reconciled and synchronized successfully!');
+        await fetchInitialData();
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenAdd = () => {
@@ -385,6 +401,14 @@ const Products = () => {
           >
             <FileSpreadsheet size={16} />
             <span>Excel Import</span>
+          </button>
+          <button
+            onClick={handleSyncQuantities}
+            className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-amber-700/10 active:scale-95 transition-all"
+            id="sync-products-btn"
+          >
+            <RefreshCw size={16} />
+            <span>Sync POL Quantities</span>
           </button>
           <button
             onClick={handleOpenAdd}
