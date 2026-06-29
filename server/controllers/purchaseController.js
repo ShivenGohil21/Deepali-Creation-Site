@@ -325,18 +325,23 @@ exports.updatePurchase = async (req, res) => {
     if (shouldUpdateItems) {
       // --- STEP 1: REVERT OLD VALUES ---
       // Revert old warehouse stock
-      for (const item of purchase.items) {
-        const product = await Product.findById(item.product);
-        if (product) {
-          const stockIndex = product.warehouseStock.findIndex(
-            (s) => s.warehouse && s.warehouse.toString() === purchase.warehouse.toString()
-          );
-          if (stockIndex !== -1) {
-            product.warehouseStock[stockIndex].quantity = Math.max(0, product.warehouseStock[stockIndex].quantity - item.quantity);
-            product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
-            await product.save();
+      try {
+        for (const item of purchase.items) {
+          const product = await Product.findById(item.product);
+          if (product && purchase.warehouse) {
+            const stockIndex = product.warehouseStock.findIndex(
+              (s) => s.warehouse && s.warehouse.toString() === purchase.warehouse.toString()
+            );
+            if (stockIndex !== -1) {
+              product.warehouseStock[stockIndex].quantity = Math.max(0, product.warehouseStock[stockIndex].quantity - item.quantity);
+              product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
+              await product.save();
+            }
           }
         }
+      } catch (revertErr) {
+        console.error(`[Update Purchase] Error reverting old stock:`, revertErr);
+        return res.status(500).json({ success: false, message: `Failed to revert old stock: ${revertErr.message}` });
       }
     }
 
@@ -441,15 +446,16 @@ exports.updatePurchase = async (req, res) => {
     }
 
     // Adjust supplier balance with new outstanding
+    // Adjust supplier balance with new outstanding
     const outstanding = Number(grandTotal) - (Number(amountPaid) || 0);
     if (outstanding > 0) {
-      supplier.balance += outstanding;
+      supplier.balance = (supplier.balance || 0) + outstanding;
       await supplier.save();
     }
 
     // Update Purchase object
     purchase.supplier = supplier._id;
-    purchase.warehouse = warehouseId;
+    purchase.warehouse = warehouseId || purchase.warehouse;
     purchase.items = processedItems;
     purchase.subTotal = Number(subTotal);
     purchase.tax = Number(tax) || 0;
