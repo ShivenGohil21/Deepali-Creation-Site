@@ -118,6 +118,7 @@ const Purchases = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list'); // 'list' or 'new'
@@ -201,6 +202,20 @@ const Purchases = () => {
       showMsg(err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFetchLatestProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const res = await API.get('/products');
+      if (res.data.success) {
+        setProducts(res.data.data.filter(p => p.status === 'Active'));
+      }
+    } catch (err) {
+      console.error('Failed to fetch latest products:', err);
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
@@ -837,6 +852,7 @@ const Purchases = () => {
                   ref={scanInputRef}
                   type="text"
                   placeholder="Type code or scan..."
+                  onFocus={handleFetchLatestProducts}
                   value={prodSearch}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -890,9 +906,21 @@ const Purchases = () => {
               </div>
 
               <div className="space-y-1 md:col-span-4">
-                <span>Select Product</span>
+                <div className="flex items-center justify-between">
+                  <span>Select Product</span>
+                  <button
+                    type="button"
+                    onClick={handleFetchLatestProducts}
+                    className="text-[10px] text-primary-600 hover:text-primary-500 flex items-center space-x-0.5"
+                    title="Reload latest products from database"
+                  >
+                    <RefreshCw size={10} className={loadingProducts ? 'animate-spin' : ''} />
+                    <span>Reload</span>
+                  </button>
+                </div>
                 <select
                   value={tempProduct}
+                  onFocus={handleFetchLatestProducts}
                   onChange={(e) => {
                     const val = e.target.value;
                     setTempProduct(val);
