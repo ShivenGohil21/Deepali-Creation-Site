@@ -332,83 +332,6 @@ const Purchases = () => {
     }
   };
 
-  const handleSavePurchaseMetadataOnly = async () => {
-    if ((!selectedSupplier && !supplierSearch) || !selectedWarehouse) {
-      showMsg('Please complete warehouse and supplier details', 'error');
-      return;
-    }
-
-    const payload = {
-      supplierId: selectedSupplier || supplierSearch,
-      warehouseId: selectedWarehouse,
-      items: [], // Ignored by backend because itemsUpdated is false
-      subTotal,
-      discount: discountAmount,
-      tax: taxAmount,
-      grandTotal,
-      paymentStatus,
-      amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
-      paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
-      date: purchaseDate,
-      purchaseNumber: purchaseNumber || undefined,
-      itemsUpdated: false
-    };
-
-    try {
-      setSubmitting(true);
-      const res = await API.put(`/purchases/${editPurchaseId}`, payload);
-      if (res.data.success) {
-        showMsg('Invoice details updated successfully!');
-        await fetchPurchasesData();
-        resetForm();
-      }
-    } catch (err) {
-      showMsg(err.message, 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSavePurchaseItemsOnly = async () => {
-    // Allow saving with 0 items — this resets all product stocks to 0
-    const payload = {
-      supplierId: selectedSupplier || supplierSearch,
-      warehouseId: selectedWarehouse,
-      items: purchaseItems.map(it => ({
-        productId: it.productObj?._id,
-        costPrice: it.costPrice,
-        quantity: it.quantity
-      })),
-      subTotal,
-      discount: discountAmount,
-      tax: taxAmount,
-      grandTotal,
-      paymentStatus,
-      amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
-      paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
-      date: purchaseDate,
-      purchaseNumber: purchaseNumber || undefined,
-      itemsUpdated: true
-    };
-
-    try {
-      setSubmitting(true);
-      const res = await API.put(`/purchases/${editPurchaseId}`, payload);
-      if (res.data.success) {
-        const msg = purchaseItems.length === 0
-          ? 'All items removed — product quantities reset to 0 in Product list!'
-          : 'Purchase items and warehouse quantities updated successfully!';
-        showMsg(msg);
-        await fetchPurchasesData();
-        resetForm();
-      }
-    } catch (err) {
-      showMsg(err.message, 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleStartEdit = (p) => {
     setEditPurchaseId(p._id);
     setPurchaseNumber(p.purchaseNumber || '');
@@ -1124,14 +1047,14 @@ const Purchases = () => {
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={handleSavePurchaseItemsOnly}
+                  onClick={handleSavePurchase}
                   className={`bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow active:scale-95 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   id="submit-purchase-items-btn"
                 >
                   {submitting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Updating Items...</span>
+                      <span>Saving Purchase...</span>
                     </>
                   ) : (
                     <span>Update Restock Items & Quantities</span>
@@ -1358,24 +1281,6 @@ const Purchases = () => {
                 </button>
               )}
 
-               {editPurchaseId ? (
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleSavePurchaseMetadataOnly}
-                  className={`w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3.5 rounded-xl text-center shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  id="submit-purchase-metadata-btn"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Update Invoice Details Only</span>
-                  )}
-                </button>
-              ) : (
                 <button
                   type="submit"
                   disabled={submitting}
@@ -1385,13 +1290,12 @@ const Purchases = () => {
                   {submitting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Processing...</span>
+                      <span>{editPurchaseId ? 'Saving Changes...' : 'Processing...'}</span>
                     </>
                   ) : (
-                    <span>Post Restock Purchase</span>
+                    <span>{editPurchaseId ? 'Save Purchase Changes' : 'Post Restock Purchase'}</span>
                   )}
                 </button>
-              )}
             </form>
           </div>
         </div>
