@@ -222,10 +222,10 @@ exports.createProduct = async (req, res) => {
       barcodeValue = code;
     }
 
-    // Check if code or barcode already exists
-    const codeExists = await Product.findOne({ $or: [{ code }, { barcodeValue }] });
-    if (codeExists) {
-      return res.status(400).json({ success: false, message: 'Product Code or Barcode Value already exists' });
+    // Check if barcode already exists
+    const barcodeExists = await Product.findOne({ barcodeValue });
+    if (barcodeExists) {
+      return res.status(400).json({ success: false, message: 'Barcode Value already exists' });
     }
 
     // Generate Barcode & QR Code Base64 images
@@ -348,12 +348,8 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    // Check if updating code and verify uniqueness
+    // Check if updating code
     if (code && code !== product.code) {
-      const codeExists = await Product.findOne({ code });
-      if (codeExists) {
-        return res.status(400).json({ success: false, message: 'Product Code is already taken' });
-      }
       product.code = code;
     }
 

@@ -9,7 +9,15 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to Database
-connectDB().then(() => {
+connectDB().then(async () => {
+  try {
+    const mongoose = require('mongoose');
+    // Drop the unique code index if it exists, to allow duplicate codes
+    await mongoose.connection.collections['products'].dropIndex('code_1');
+    console.log('Successfully dropped unique code index from products collection.');
+  } catch (err) {
+    // Index might not exist, which is fine
+  }
   const reconcileStocks = require('./utils/stockReconciler');
   reconcileStocks();
 });
