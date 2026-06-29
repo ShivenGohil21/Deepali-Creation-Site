@@ -199,7 +199,7 @@ const Purchases = () => {
         setSupplierSearch(supRes.data.data[0].name);
       }
     } catch (err) {
-      showMsg(err.message, 'error');
+      showMsg(err.response?.data?.message || err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -341,7 +341,7 @@ const Purchases = () => {
         resetForm();
       }
     } catch (err) {
-      showMsg(err.message, 'error');
+      showMsg(err.response?.data?.message || err.message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -386,7 +386,7 @@ const Purchases = () => {
           fetchPurchasesData();
         }
       } catch (err) {
-        showMsg(err.message, 'error');
+        showMsg(err.response?.data?.message || err.message, 'error');
       }
     }
   };
@@ -399,7 +399,7 @@ const Purchases = () => {
         setShowDetailModal(true);
       }
     } catch (err) {
-      showMsg(err.message, 'error');
+      showMsg(err.response?.data?.message || err.message, 'error');
     }
   };
 
@@ -446,7 +446,7 @@ const Purchases = () => {
         setShowBulkBarcodeModal(true);
       }
     } catch (err) {
-      showMsg(err.message, 'error');
+      showMsg(err.response?.data?.message || err.message, 'error');
     } finally {
       setBulkBarcodeLoading(false);
     }
@@ -522,7 +522,7 @@ const Purchases = () => {
       });
       setBulkBarcodeItems(updated);
     } catch (err) {
-      showMsg(`Some price updates failed: ${err.message}`, 'error');
+      showMsg(`Some price updates failed: ${err.response?.data?.message || err.message}`, 'error');
     } finally {
       setBulkBarcodeLoading(false);
     }
@@ -570,7 +570,7 @@ const Purchases = () => {
         setShowReturnModal(false);
       }
     } catch (err) {
-      showMsg(err.message, 'error');
+      showMsg(err.response?.data?.message || err.message, 'error');
     }
   };
 
@@ -583,7 +583,7 @@ const Purchases = () => {
           fetchPurchasesData();
         }
       } catch (err) {
-        showMsg(err.message, 'error');
+        showMsg(err.response?.data?.message || err.message, 'error');
       }
     }
   };

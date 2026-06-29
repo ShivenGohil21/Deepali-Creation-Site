@@ -142,7 +142,7 @@ const Products = () => {
         setWarehouses(whRes.data.data);
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.response?.data?.message || err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ const Products = () => {
         await fetchInitialData();
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.response?.data?.message || err.message, 'error');
     } finally {
       setLoading(false);
     }

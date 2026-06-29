@@ -53,7 +53,7 @@ exports.createPurchase = async (req, res) => {
   } = req.body;
 
   if (!supplierId || !warehouseId || !items || items.length === 0 || grandTotal === undefined) {
-    return res.status(400).json({ success: false, message: 'Invalid Purchase payload' });
+    return res.status(400).json({ success: false, message: 'Invalid Purchase Form: Please ensure Supplier, Warehouse, and at least one Item are selected.' });
   }
 
   try {
@@ -297,7 +297,8 @@ exports.updatePurchase = async (req, res) => {
   try {
     const purchase = await Purchase.findById(req.params.id);
     if (!purchase) {
-      return res.status(404).json({ success: false, message: 'Purchase not found' });
+      console.error(`[Update Purchase] Purchase ID not found: ${req.params.id}`);
+      return res.status(404).json({ success: false, message: `Purchase bill not found in the database. It may have been deleted.` });
     }
 
     const productsToReconcile = new Set();

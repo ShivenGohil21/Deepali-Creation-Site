@@ -57,7 +57,8 @@ app.use(express.static(clientBuildPath));
 
 // Fallback to React Router Index
 app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+  const indexFile = path.join(clientBuildPath, 'index.html');
+  res.sendFile(indexFile, (err) => {
     if (err) {
       // In development or if build is missing, return a simple JSON response
       res.status(200).json({
