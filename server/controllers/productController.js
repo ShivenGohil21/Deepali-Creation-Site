@@ -33,6 +33,28 @@ const generateNextCode = async (prefix) => {
   return `${cleanPrefix}${paddedNum}`;
 };
 
+// Helper: Generate next sequential barcode value
+const generateNextBarcodeValue = async (prefix) => {
+  const cleanPrefix = prefix ? prefix.toUpperCase().trim() : 'D';
+  const regex = new RegExp(`^${cleanPrefix}(\\d+)$`);
+  const products = await Product.find({ barcodeValue: regex });
+
+  let maxNum = 0;
+  products.forEach((prod) => {
+    const match = prod.barcodeValue.match(regex);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNum) {
+        maxNum = num;
+      }
+    }
+  });
+
+  const nextNum = maxNum + 1;
+  const paddedNum = String(nextNum).padStart(4, '0');
+  return `${cleanPrefix}${paddedNum}`;
+};
+
 // Helper: Generate Barcode Base64
 const getBarcodeBase64 = async (text, scale = 3, includetext = true) => {
   return new Promise((resolve, reject) => {
@@ -219,7 +241,12 @@ exports.createProduct = async (req, res) => {
 
     // Auto-generate Barcode Value if not provided
     if (!barcodeValue) {
-      barcodeValue = code;
+      const barcodeExists = await Product.findOne({ barcodeValue: code });
+      if (!barcodeExists) {
+        barcodeValue = code;
+      } else {
+        barcodeValue = await generateNextBarcodeValue(codePrefix || 'D');
+      }
     }
 
     // Check if barcode already exists
