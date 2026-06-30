@@ -379,21 +379,21 @@ exports.updatePurchase = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Supplier not found or specified' });
     }
 
-    if (shouldUpdateItems) {
-      for (const item of items) {
-        const { productId, costPrice, quantity } = item;
-        if (productId) {
-          productsToReconcile.add(productId.toString());
-        }
-        const qty = Number(quantity);
-        const cost = Number(costPrice);
+    for (const item of items) {
+      const { productId, costPrice, quantity } = item;
+      if (productId) {
+        productsToReconcile.add(productId.toString());
+      }
+      const qty = Number(quantity);
+      const cost = Number(costPrice);
 
-        const product = await Product.findById(productId);
-        if (!product) {
-          console.warn(`[Update Purchase] Product not found: ${productId}. Skipping.`);
-          continue;
-        }
+      const product = await Product.findById(productId);
+      if (!product) {
+        console.warn(`[Update Purchase] Product not found: ${productId}. Skipping.`);
+        continue;
+      }
 
+      if (shouldUpdateItems) {
         // Add to new warehouse
         const stockIndex = product.warehouseStock.findIndex(
           (s) => s.warehouse && s.warehouse.toString() === warehouseId
@@ -427,22 +427,14 @@ exports.updatePurchase = async (req, res) => {
           createdBy: req.user ? req.user.id : null
         });
         await log.save();
-
-        processedItems.push({
-          product: productId,
-          costPrice: cost,
-          quantity: qty,
-          total: cost * qty
-        });
       }
-    } else {
-      // Preserve existing items
-      processedItems.push(...purchase.items.map(it => ({
-        product: it.product,
-        costPrice: it.costPrice,
-        quantity: it.quantity,
-        total: it.total || (it.costPrice * it.quantity)
-      })));
+
+      processedItems.push({
+        product: productId,
+        costPrice: cost,
+        quantity: qty,
+        total: cost * qty
+      });
     }
 
     // Adjust supplier balance with new outstanding
