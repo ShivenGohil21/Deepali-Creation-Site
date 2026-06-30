@@ -99,6 +99,7 @@ const Adjustments = () => {
         productId: product._id,
         name: product.name,
         code: product.code,
+        barcodeValue: product.barcodeValue || '',
         type: 'Addition',
         quantity: 1,
         price: product.sellingPrice || 0,
@@ -435,7 +436,7 @@ const Adjustments = () => {
                           <td className="px-4 py-2 font-mono text-[10px]">{index + 1}</td>
                           <td className="px-4 py-2">
                             <p className="font-semibold text-slate-800 dark:text-white leading-normal">{it.name}</p>
-                            <span className="text-[10px] text-slate-400 font-mono">Code: {it.code}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">Code: {it.code} | Barcode: {it.barcodeValue || '-'}</span>
                           </td>
                           <td className="px-4 py-2">
                             <select
@@ -603,8 +604,8 @@ const Adjustments = () => {
                       <tr key={idx} className="hover:bg-slate-50/60">
                         <td className="px-4 py-2.5 font-mono">{idx + 1}</td>
                         <td className="px-4 py-2.5">
-                          <p className="font-bold text-slate-900">{it.product?.name}</p>
-                          <span className="text-[10px] text-slate-500 font-mono">Code: {it.product?.code}</span>
+                           <p className="font-bold text-slate-900">{it.product?.name}</p>
+                           <span className="text-[10px] text-slate-500 font-mono">Code: {it.product?.code} | Barcode: {it.product?.barcodeValue || 'N/A'}</span>
                         </td>
                         <td className="px-4 py-2.5 text-slate-500 font-semibold">{it.product?.color || '—'}</td>
                         <td className="px-4 py-2.5">

@@ -404,7 +404,7 @@ const Warehouses = () => {
                 >
                   <option value="">Choose item...</option>
                   {products.map(p => (
-                    <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
+                    <option key={p._id} value={p._id}>{p.name} ({p.code} | Barcode: {p.barcodeValue || '-'})</option>
                   ))}
                 </select>
               </div>

@@ -54,6 +54,7 @@ const Products = () => {
   const [formColor, setFormColor] = useState('');
   const [formPrefix, setFormPrefix] = useState('D'); // D, SH, TS
   const [formCode, setFormCode] = useState(''); // If empty, backend auto-generates
+  const [formBarcodeValue, setFormBarcodeValue] = useState('');
   const [formStockQty, setFormStockQty] = useState(''); // Only used in edit flow
   const [submitting, setSubmitting] = useState(false);
 
@@ -105,7 +106,7 @@ const Products = () => {
       const categoryName = p.category?.name || 'N/A';
       const brandName = p.brand?.name || 'N/A';
       const statusText = p.status || 'Active';
-      return `"${p.code}","${p.name.replace(/"/g, '""')}","${(p.color || '-').replace(/"/g, '""')}","${categoryName.replace(/"/g, '""')}","${brandName.replace(/"/g, '""')}",${p.costPrice},${p.sellingPrice},${p.stockQuantity},"${p.unit}",${p.alertQuantity},"${statusText}"`;
+      return `"${p.code}","${p.name.replace(/"/g, '""')}","${(p.color || '-').replace(/"/g, '""')}","${categoryName.replace(/"/g, '""')}","${brandName.replace(/"/g, '""')}",${p.costPrice},${p.sellingPrice},"${p.barcodeValue || ''}",${p.stockQuantity},"${p.unit}",${p.alertQuantity},"${statusText}"`;
     }).join('\r\n');
 
     // UTF-8 BOM to prevent Excel encoding issues
@@ -183,6 +184,7 @@ const Products = () => {
     setFormColor('');
     setFormPrefix('D');
     setFormCode('');
+    setFormBarcodeValue('');
     setFormStockQty('');
     setShowAddEditModal(true);
   };
@@ -201,6 +203,7 @@ const Products = () => {
     setFormColor(product.color || '');
     setFormPrefix(product.code.match(/^[A-Za-z]+/)?.[0] || 'D');
     setFormCode(product.code);
+    setFormBarcodeValue(product.barcodeValue || '');
     setFormStockQty(product.stockQuantity !== undefined ? product.stockQuantity : 0);
     setShowAddEditModal(true);
   };
@@ -287,7 +290,8 @@ const Products = () => {
       alertQuantity: Number(formAlertQty),
       color: formColor,
       description: formDescription,
-      codePrefix: formPrefix
+      codePrefix: formPrefix,
+      barcodeValue: formBarcodeValue || undefined
     };
 
     try {
@@ -501,6 +505,7 @@ const Products = () => {
                       />
                     </th>
                     <th className="px-6 py-3.5">Code</th>
+                    <th className="px-6 py-3.5">Barcode</th>
                     <th className="px-6 py-3.5">Product Name</th>
                     <th className="px-6 py-3.5">Color</th>
                     <th className="px-6 py-3.5">Category</th>
@@ -514,14 +519,14 @@ const Products = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 text-xs">
                   {loading ? (
                     <tr>
-                      <td colSpan="10" className="text-center py-12">
+                      <td colSpan="11" className="text-center py-12">
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                         <span>Loading products catalogue...</span>
                       </td>
                     </tr>
                   ) : filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="10" className="text-center py-12 text-slate-400">
+                      <td colSpan="11" className="text-center py-12 text-slate-400">
                         No matching products found.
                       </td>
                     </tr>
@@ -537,6 +542,7 @@ const Products = () => {
                           />
                         </td>
                         <td className="px-6 py-3.5 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">{p.code}</td>
+                        <td className="px-6 py-3.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">{p.barcodeValue}</td>
                         <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{p.name}</td>
                         <td className="px-6 py-3.5 font-semibold text-slate-500 dark:text-slate-400">{p.color || '-'}</td>
                         <td className="px-6 py-3.5">{p.category?.name || 'N/A'}</td>
@@ -614,6 +620,20 @@ const Products = () => {
                     placeholder="Auto-generated if left blank"
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
                     id="product-code-input"
+                  />
+                </div>
+
+                {/* Barcode Number Input */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Barcode Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formBarcodeValue}
+                    onChange={(e) => setFormBarcodeValue(e.target.value)}
+                    placeholder="e.g. D0001 or scan barcode"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
+                    id="product-barcode-input"
                   />
                 </div>
 

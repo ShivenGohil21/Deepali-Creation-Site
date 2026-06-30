@@ -734,7 +734,7 @@ const Sales = () => {
                       const availableQty = whStock ? whStock.quantity : 0;
                       return (
                         <option key={p._id} value={p._id}>
-                          {p.name} ({p.code}) [Stock: {availableQty}]
+                          {p.name} ({p.code} | Barcode: {p.barcodeValue || '-'}) [Stock: {availableQty}]
                         </option>
                       );
                     })}

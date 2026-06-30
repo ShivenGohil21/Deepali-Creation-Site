@@ -604,6 +604,9 @@ exports.importProductsExcel = async (req, res) => {
       const row = rows[i];
       let {
         Code,
+        Barcode,
+        'Barcode Number': barcodeNum,
+        'Barcode Value': barcodeVal,
         Name,
         Category: catName,
         Brand: brandName,
@@ -643,15 +646,22 @@ exports.importProductsExcel = async (req, res) => {
           productCode = await generateNextCode('D');
         }
 
-        // Check if code or barcode already exists
-        const exists = await Product.findOne({ $or: [{ code: productCode }, { barcodeValue: productCode }] });
+        // Determine barcode value
+        let finalBarcodeVal = Barcode || barcodeNum || barcodeVal || '';
+        finalBarcodeVal = finalBarcodeVal ? String(finalBarcodeVal).trim() : '';
+        if (!finalBarcodeVal) {
+          finalBarcodeVal = productCode;
+        }
+
+        // Check if barcode already exists
+        const exists = await Product.findOne({ barcodeValue: finalBarcodeVal });
         if (exists) {
           failedCount++;
-          reportDetails.push({ row: i + 2, code: productCode, status: 'Failed', reason: 'Product code/barcode already exists' });
+          reportDetails.push({ row: i + 2, code: productCode, status: 'Failed', reason: `Barcode '${finalBarcodeVal}' already exists` });
           continue;
         }
 
-        const qrCodeBase64 = await getQRCodeBase64(productCode);
+        const qrCodeBase64 = await getQRCodeBase64(finalBarcodeVal);
         const qty = Number(Stock) || 0;
 
         const productData = {
@@ -662,7 +672,7 @@ exports.importProductsExcel = async (req, res) => {
           costPrice: Number(costPriceVal),
           sellingPrice: Number(sellingPriceVal),
           tax: 0,
-          barcodeValue: productCode,
+          barcodeValue: finalBarcodeVal,
           qrCode: qrCodeBase64,
           stockQuantity: qty,
           alertQuantity: Number(alertQtyVal) || 5,

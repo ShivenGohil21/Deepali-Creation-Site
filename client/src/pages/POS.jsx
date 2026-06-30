@@ -423,7 +423,7 @@ const POS = () => {
                       >
                         <div>
                           <span className="font-bold text-slate-900 dark:text-white">{p.name}</span>
-                          <span className="ml-2 font-mono text-[10px] text-slate-450">({p.code})</span>
+                          <span className="ml-2 font-mono text-[10px] text-slate-450">({p.code} | Barcode: {p.barcodeValue || '-'})</span>
                         </div>
                         <span className="text-[10px] font-bold text-slate-500">₹{p.sellingPrice}</span>
                       </div>
@@ -680,7 +680,7 @@ const POS = () => {
                     id={`pos-grid-add-${p.code}`}
                   >
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 font-mono tracking-wide">{p.code}</span>
+                      <span className="text-[9px] font-bold text-slate-400 font-mono tracking-wide">{p.code} | Barcode: {p.barcodeValue || '-'}</span>
                       <p className="font-bold text-slate-800 dark:text-slate-100 mt-0.5 truncate leading-tight">
                         {p.name} {p.color ? `(${p.color})` : ''}
                       </p>
