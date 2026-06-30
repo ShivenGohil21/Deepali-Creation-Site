@@ -214,7 +214,7 @@ const Products = () => {
   const handleSaveAdjust = async (e) => {
     e.preventDefault();
     if (!adjustProduct) return;
-    
+
     const newQty = Number(adjustNewQty);
     if (isNaN(newQty) || newQty < 0) {
       showToast('Please enter a valid positive number', 'error');
@@ -233,10 +233,10 @@ const Products = () => {
     try {
       setSubmitting(true);
       // Pick the first warehouse or default if empty
-      const warehouseId = adjustProduct.warehouseStock && adjustProduct.warehouseStock.length > 0 
-        ? adjustProduct.warehouseStock[0].warehouse 
+      const warehouseId = adjustProduct.warehouseStock && adjustProduct.warehouseStock.length > 0
+        ? adjustProduct.warehouseStock[0].warehouse
         : (warehouses.length > 0 ? warehouses[0]._id : null);
-      
+
       if (!warehouseId) {
         showToast('No warehouse available for adjustment', 'error');
         setSubmitting(false);
@@ -244,7 +244,7 @@ const Products = () => {
       }
 
       const type = diff > 0 ? 'Addition' : 'Subtraction';
-      
+
       const payload = {
         warehouseId,
         notes: 'Manual Adjustment from Products Catalogue',
@@ -545,8 +545,8 @@ const Products = () => {
                         <td className="px-6 py-3.5 font-bold text-slate-850 dark:text-slate-100">₹{p.sellingPrice.toFixed(2)}</td>
                         <td className="px-6 py-3.5 text-center">
                           <span className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold ${p.stockQuantity <= p.alertQuantity
-                              ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                              : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             }`}>
                             {p.stockQuantity} {p.unit}
                           </span>
@@ -835,6 +835,7 @@ const Products = () => {
           </div>
         )}
 
+      </div>
     </>
   );
 };
