@@ -911,33 +911,33 @@ const Products = () => {
               </div>
 
               {/* Preview Sheet Card */}
-              <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl bg-slate-100 dark:bg-slate-950/80 max-h-80 overflow-y-auto flex justify-center">
-                <div className={`grid gap-2 bg-white p-3 shadow-inner rounded border ${printCopies === 1 ? 'grid-cols-1' : 'grid-cols-4'}`}>
+              <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl bg-slate-100 dark:bg-slate-950/80 max-h-[50vh] overflow-y-auto flex justify-center">
+                <div className={`grid gap-3 bg-white p-4 shadow-inner rounded border ${printCopies === 1 ? 'grid-cols-1' : 'grid-cols-4'}`}>
                   {Array.from({ length: printCopies }).map((_, i) => (
                     <div
                       key={i}
-                      className={`border border-slate-400/60 rounded text-center bg-white text-black flex flex-col justify-center items-center shadow-sm p-1 box-border ${printCopies === 1 ? 'w-48 h-32' : 'w-[105px] h-[72px]'
+                      className={`border border-slate-400/60 rounded text-center bg-white text-black flex flex-col justify-center items-center shadow-sm p-1.5 box-border ${printCopies === 1 ? 'w-56 h-36' : 'w-[140px] h-[100px]'
                         }`}
                     >
-                      <p className={`font-semibold uppercase leading-tight text-slate-900 m-0 p-0 ${printCopies === 1 ? 'text-[11px]' : 'text-[8px]'
+                      <p className={`font-semibold uppercase leading-tight text-slate-900 m-0 p-0 ${printCopies === 1 ? 'text-[12px]' : 'text-[11px]'
                         }`}>
                         {barcodePrintData.shopName}
                       </p>
-                      <p className={`font-bold leading-tight uppercase truncate max-w-full m-0 p-0 ${printCopies === 1 ? 'text-[12px] text-slate-800' : 'text-[9px] text-slate-800'
+                      <p className={`font-bold leading-tight uppercase truncate max-w-full m-0 p-0 ${printCopies === 1 ? 'text-[13px] text-slate-800' : 'text-[12px] text-slate-800'
                         }`}>
                         {barcodePrintData.productName} {barcodePrintData.productColor ? `(${barcodePrintData.productColor})` : ''}
                       </p>
-                      <p className={`font-bold leading-tight m-0 p-0 mb-0.5 ${printCopies === 1 ? 'text-[11px] text-slate-800' : 'text-[8px] text-slate-800'
+                      <p className={`font-bold leading-tight m-0 p-0 mb-1 ${printCopies === 1 ? 'text-[12px] text-slate-800' : 'text-[11px] text-slate-800'
                         }`}>
                         PRICE {barcodePrintData.sellingPrice.toFixed(2)}
                       </p>
                       <img
                         src={barcodePrintData.barcodeImage}
                         alt="Barcode Preview"
-                        className={`mx-auto object-contain max-w-full ${printCopies === 1 ? 'h-10' : 'h-6'
+                        className={`mx-auto object-contain max-w-full ${printCopies === 1 ? 'h-12' : 'h-10'
                           }`}
                       />
-                      <p className={`font-extrabold uppercase leading-none m-0 p-0 tracking-widest mt-0.5 ${printCopies === 1 ? 'text-[12px] text-black' : 'text-[9px] text-black'
+                      <p className={`font-extrabold uppercase leading-none m-0 p-0 tracking-widest mt-1 ${printCopies === 1 ? 'text-[14px] text-black' : 'text-[12px] text-black'
                         }`}>
                         {barcodePrintData.barcodeValue}
                       </p>
@@ -1001,24 +1001,24 @@ const Products = () => {
               {Array.from({ length: printCopies }).map((_, i) => (
                 <div
                   key={i}
-                  className="border border-slate-400 p-1 text-center bg-white text-black flex flex-col justify-center items-center rounded-sm box-border w-full"
-                  style={{ height: '26mm' }}
+                  className="border border-slate-400 p-1.5 text-center bg-white text-black flex flex-col justify-center items-center rounded-sm box-border w-full"
+                  style={{ height: '28mm' }}
                 >
-                  <p className="font-semibold text-[8px] uppercase text-black leading-tight m-0 p-0">
+                  <p className="font-semibold text-[11px] uppercase text-black leading-tight m-0 p-0">
                     {barcodePrintData.shopName}
                   </p>
-                  <p className="text-[9px] font-bold text-black leading-tight uppercase truncate max-w-full m-0 p-0">
+                  <p className="text-[12px] font-bold text-black leading-tight uppercase truncate max-w-full m-0 p-0">
                     {barcodePrintData.productName} {barcodePrintData.productColor ? `(${barcodePrintData.productColor})` : ''}
                   </p>
-                  <p className="font-bold text-[8px] text-black leading-tight m-0 p-0 mb-0.5">
+                  <p className="font-bold text-[11px] text-black leading-tight m-0 p-0 mb-1">
                     PRICE {barcodePrintData.sellingPrice.toFixed(2)}
                   </p>
                   <img
                     src={barcodePrintData.barcodeImage}
                     alt="Print Barcode"
-                    className="h-6 object-contain max-w-full mx-auto"
+                    className="h-10 object-contain max-w-full mx-auto"
                   />
-                  <p className="font-extrabold text-[9px] text-black leading-none m-0 p-0 mt-0.5 tracking-widest">
+                  <p className="font-extrabold text-[12px] text-black leading-none m-0 p-0 mt-1 tracking-widest">
                     {barcodePrintData.barcodeValue}
                   </p>
                 </div>
