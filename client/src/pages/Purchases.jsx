@@ -336,7 +336,9 @@ const Purchases = () => {
         showMsg(editPurchaseId ? 'Stock purchase updated successfully!' : 'Stock purchased successfully! Inventory updated.');
         await fetchPurchasesData();
         setShowEditConfirmModal(false);
-        resetForm();
+        if (!editPurchaseId) {
+          resetForm();
+        }
       }
     } catch (err) {
       showMsg(err.response?.data?.message || err.message, 'error');
@@ -2072,7 +2074,13 @@ const Purchases = () => {
         {/* MODAL: Edit Confirm Modal */}
         {showEditConfirmModal && (
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6 text-center">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6 text-center relative">
+              <button 
+                onClick={() => setShowEditConfirmModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
               <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
                 <AlertTriangle size={32} />
               </div>
