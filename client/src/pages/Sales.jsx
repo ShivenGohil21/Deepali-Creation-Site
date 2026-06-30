@@ -208,9 +208,35 @@ const Sales = () => {
   };
 
   // Calculations for Edit form
-  const editSubTotal = saleItems.reduce((acc, curr) => acc + (curr.price - curr.discount) * curr.quantity, 0);
-  const editTaxAmount = (editSubTotal * Number(taxRate || 0)) / 100;
-  const editGrandTotal = Math.max(0, editSubTotal + editTaxAmount - Number(discount || 0));
+  let editSubTotal = 0;
+  let rawEditSubTotal = 0;
+
+  saleItems.forEach(item => {
+    rawEditSubTotal += (item.price - (item.discount || 0)) * item.quantity;
+  });
+
+  const globalDiscountAmount = Number(discount) || 0;
+  let totalCgst = 0;
+  let totalSgst = 0;
+
+  saleItems.forEach(item => {
+    const discountedPrice = item.price - (item.discount || 0);
+    const lineTotal = discountedPrice * item.quantity;
+    editSubTotal += lineTotal;
+
+    const proportion = rawEditSubTotal > 0 ? (lineTotal / rawEditSubTotal) : 0;
+    const itemGlobalDiscount = globalDiscountAmount * proportion;
+    
+    const taxableAmount = Math.max(0, lineTotal - itemGlobalDiscount);
+    const itemTaxPercent = item.productObj?.tax || item.tax || 0;
+    const itemTaxAmount = taxableAmount * (itemTaxPercent / 100);
+    
+    totalCgst += itemTaxAmount / 2;
+    totalSgst += itemTaxAmount / 2;
+  });
+
+  const editTaxAmount = totalCgst + totalSgst;
+  const editGrandTotal = Math.max(0, editSubTotal + editTaxAmount - globalDiscountAmount);
 
   const handleStartEdit = async (id) => {
     try {
@@ -350,7 +376,7 @@ const Sales = () => {
         discount: it.discount || 0
       })),
       subTotal: editSubTotal,
-      tax: Number(taxRate),
+      tax: editTaxAmount,
       discount: Number(discount),
       grandTotal: editGrandTotal,
       paymentMethod,
@@ -930,16 +956,6 @@ const Sales = () => {
               {/* Totals Summary */}
               <div className="bg-slate-50 dark:bg-slate-950/45 p-4 border rounded-2xl dark:border-slate-855 space-y-3 text-xs">
                 <div className="flex justify-between items-center">
-                  <span>General Sale Tax Rate (%)</span>
-                  <input
-                    type="number"
-                    value={taxRate || ''}
-                    onChange={(e) => setTaxRate(e.target.value)}
-                    className="w-20 bg-white dark:bg-slate-900 border rounded-lg py-1 px-2 text-center font-semibold text-slate-800 dark:text-white focus:outline-none"
-                    placeholder="0"
-                  />
-                </div>
-                <div className="flex justify-between items-center">
                   <span>Overall Bill Discount (₹)</span>
                   <input
                     type="number"
@@ -958,8 +974,12 @@ const Sales = () => {
                     <span>₹{editSubTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Tax Amount ({taxRate}%):</span>
-                    <span>₹{editTaxAmount.toFixed(2)}</span>
+                    <span className="text-slate-400">Total CGST:</span>
+                    <span>₹{totalCgst.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total SGST:</span>
+                    <span>₹{totalSgst.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Discount Applied:</span>
@@ -1057,10 +1077,23 @@ const Sales = () => {
                   <span className="text-slate-450">Subtotal:</span>
                   <span>₹{selectedSale.subTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-450">Tax:</span>
-                  <span>₹{((selectedSale.subTotal * selectedSale.tax)/100).toFixed(2)} ({selectedSale.tax}%)</span>
-                </div>
+                {(() => {
+                  const isTaxAmount = Math.abs(selectedSale.subTotal - selectedSale.discount + selectedSale.tax - selectedSale.grandTotal) < 2;
+                  const taxAmount = isTaxAmount ? selectedSale.tax : (selectedSale.subTotal * selectedSale.tax) / 100;
+                  const taxPercent = isTaxAmount ? (selectedSale.subTotal > 0 ? (selectedSale.tax / (selectedSale.subTotal - selectedSale.discount)) * 100 : 0) : selectedSale.tax;
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-450">CGST ({(taxPercent / 2).toFixed(1)}%):</span>
+                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-450">SGST ({(taxPercent / 2).toFixed(1)}%):</span>
+                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
                 <div className="flex justify-between">
                   <span className="text-slate-450">Discount:</span>
                   <span className="text-red-500 font-semibold">-₹{selectedSale.discount.toFixed(2)}</span>
