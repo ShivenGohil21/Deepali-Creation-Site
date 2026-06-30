@@ -2011,68 +2011,85 @@ const Purchases = () => {
             </div>
           ) : (
             /* Custom grid layout printed on sheet */
-            <div 
-              className="bg-white text-black w-full mx-auto box-border"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, 1fr)`,
-                gap: BARCODE_STYLES[printStyle].gap,
-                padding: BARCODE_STYLES[printStyle].isA4 ? '5mm' : '0mm',
-                width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
-                boxSizing: 'border-box'
-              }}
-            >
-              {bulkBarcodeItems
-                .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
-                .flatMap((item, itemIdx) => 
-                  Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
-                    <div 
-                      key={`print-grid-${itemIdx}-${copyIdx}`}
-                      className="border border-slate-400 text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
-                      style={{
-                        height: BARCODE_STYLES[printStyle].height,
-                        padding: BARCODE_STYLES[printStyle].padding,
-                        boxSizing: 'border-box',
-                        pageBreakInside: 'avoid',
-                        breakInside: 'avoid'
-                      }}
-                    >
-                      <p 
-                        className="font-semibold uppercase leading-tight text-black m-0 p-0"
-                        style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
-                      >
-                        {item.shopName}
-                      </p>
-                      <p 
-                        className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
-                        style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
-                      >
-                        {item.productName} {item.productColor ? `(${item.productColor})` : ''}
-                      </p>
-                      <p 
-                        className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
-                        style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
-                      >
-                        PRICE {Number(item.customPrice || 0).toFixed(2)}
-                      </p>
-                      <img 
-                        src={item.barcodeImage} 
-                        alt="Barcode" 
-                        className="object-contain max-w-[95%] mx-auto"
-                        style={{ 
-                          height: BARCODE_STYLES[printStyle].imgHeight,
-                          imageRendering: 'pixelated'
+            <div className="w-full mx-auto box-border">
+              {(() => {
+                const itemsPerPage = parseInt(printStyle.split('-')[0], 10);
+                const allItems = bulkBarcodeItems
+                  .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
+                  .flatMap((item) => 
+                    Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).fill(item)
+                  );
+                
+                const pages = [];
+                for (let i = 0; i < allItems.length; i += itemsPerPage) {
+                  pages.push(allItems.slice(i, i + itemsPerPage));
+                }
+
+                return pages.map((pageItems, pageIdx) => (
+                  <div 
+                    key={`page-${pageIdx}`}
+                    className="bg-white text-black mx-auto"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, 1fr)`,
+                      gap: BARCODE_STYLES[printStyle].gap,
+                      padding: BARCODE_STYLES[printStyle].isA4 ? '5mm' : '0mm',
+                      width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
+                      boxSizing: 'border-box',
+                      pageBreakAfter: 'always',
+                      breakAfter: 'page'
+                    }}
+                  >
+                    {pageItems.map((item, itemIdx) => (
+                      <div 
+                        key={`print-grid-${pageIdx}-${itemIdx}`}
+                        className="border border-slate-400 text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
+                        style={{
+                          height: BARCODE_STYLES[printStyle].height,
+                          padding: BARCODE_STYLES[printStyle].padding,
+                          boxSizing: 'border-box',
+                          pageBreakInside: 'avoid',
+                          breakInside: 'avoid'
                         }}
-                      />
-                      <p 
-                        className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
-                        style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                       >
-                        {item.barcodeValue}
-                      </p>
-                    </div>
-                  ))
-                )}
+                        <p 
+                          className="font-semibold uppercase leading-tight text-black m-0 p-0"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                        >
+                          {item.shopName}
+                        </p>
+                        <p 
+                          className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
+                          style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
+                        >
+                          {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                        </p>
+                        <p 
+                          className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
+                        >
+                          PRICE {Number(item.customPrice || 0).toFixed(2)}
+                        </p>
+                        <img 
+                          src={item.barcodeImage} 
+                          alt="Barcode" 
+                          className="object-contain max-w-[95%] mx-auto"
+                          style={{ 
+                            height: BARCODE_STYLES[printStyle].imgHeight,
+                            imageRendering: 'pixelated'
+                          }}
+                        />
+                        <p 
+                          className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
+                        >
+                          {item.barcodeValue}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()}
             </div>
           )}
         </div>
