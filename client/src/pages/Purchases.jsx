@@ -131,7 +131,7 @@ const Purchases = () => {
   const [amountPaid, setAmountPaid] = useState('');
   const [discount, setDiscount] = useState(0);
 
-  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [gstRate, setGstRate] = useState(10);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
@@ -282,38 +282,16 @@ const Purchases = () => {
   };
 
   // Calculate totals
-  let subTotal = 0;
-  let rawSubTotal = 0;
-
-  purchaseItems.forEach(curr => {
-    rawSubTotal += curr.total;
-  });
-
-  const globalDiscountAmount = Number(discount) || 0;
-  let totalCgst = 0;
-  let totalSgst = 0;
-
-  purchaseItems.forEach(curr => {
-    subTotal += curr.total;
-    const proportion = rawSubTotal > 0 ? (curr.total / rawSubTotal) : 0;
-    const itemGlobalDiscount = globalDiscountAmount * proportion;
-    
-    const taxableAmount = Math.max(0, curr.total - itemGlobalDiscount);
-    const itemTaxPercent = curr.productObj?.tax || 0;
-    const itemTaxAmount = taxableAmount * (itemTaxPercent / 100);
-
-    totalCgst += itemTaxAmount / 2;
-    totalSgst += itemTaxAmount / 2;
-  });
-
-  const cgstAmount = totalCgst;
-  const sgstAmount = totalSgst;
-  const taxAmount = totalCgst + totalSgst;
-  const grandTotal = Math.max(0, subTotal - globalDiscountAmount + taxAmount);
+  const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
+  const discountAmount = Number(discount) || 0;
+  const taxableAmount = Math.max(0, subTotal - discountAmount);
+  const taxAmount = taxableAmount * (Number(gstRate || 0) / 100);
+  const grandTotal = Math.max(0, taxableAmount + taxAmount);
 
   const resetForm = () => {
     setPurchaseItems([]);
     setDiscount(0);
+    setGstRate(10);
     setAmountPaid('');
     setPurchaseDate(new Date().toISOString().split('T')[0]);
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -335,7 +313,7 @@ const Purchases = () => {
         quantity: it.quantity
       })),
       subTotal,
-      discount: globalDiscountAmount,
+      discount: discountAmount,
       tax: taxAmount,
       grandTotal,
       paymentStatus,
@@ -403,6 +381,11 @@ const Purchases = () => {
     setPaymentStatus(p.paymentStatus || 'Paid');
     setAmountPaid(p.amountPaid || '');
     setDiscount(p.discount || 0);
+    const pSubTotal = p.subTotal || 0;
+    const pDiscount = p.discount || 0;
+    const pTaxable = Math.max(0, pSubTotal - pDiscount);
+    const derivedGstRate = p.tax && pTaxable > 0 ? (p.tax / pTaxable) * 100 : 0;
+    setGstRate(Number(derivedGstRate.toFixed(2)));
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
@@ -1240,6 +1223,20 @@ const Purchases = () => {
 
 
 
+              {/* GST Input */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GST (%)</span>
+                <input
+                  type="number"
+                  placeholder="10"
+                  step="0.01"
+                  min="0"
+                  value={gstRate}
+                  onChange={(e) => setGstRate(Math.max(0, Number(e.target.value)))}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
+                />
+              </div>
+
               {/* Payment Status */}
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Status</span>
@@ -1299,15 +1296,11 @@ const Purchases = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-450">Discount:</span>
-                  <span className="text-red-500 font-semibold">-₹{globalDiscountAmount.toFixed(2)}</span>
+                  <span className="text-red-500 font-semibold">-₹{discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-450">Total CGST:</span>
-                  <span className="text-emerald-500 font-semibold">+₹{cgstAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-450">Total SGST:</span>
-                  <span className="text-emerald-500 font-semibold">+₹{sgstAmount.toFixed(2)}</span>
+                  <span className="text-slate-450">GST ({gstRate}%):</span>
+                  <span className="text-emerald-500 font-semibold">+₹{taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 text-xs font-bold text-slate-900 dark:text-white">
                   <span>Grand Total:</span>

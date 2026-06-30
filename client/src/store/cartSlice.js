@@ -3,48 +3,25 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   items: [], // { _id, name, code, barcodeValue, unit, sellingPrice, tax, quantity, discount, total }
   discount: 0, // Flat cart discount
+  tax: 10,     // Global GST percentage (defaults to 10%)
   customer: null,  // Selected customer object
   warehouseId: '', // Selected warehouse ID
 };
 
 const calculateTotals = (state) => {
   let subTotal = 0;
-  let rawSubTotal = 0;
-
-  state.items.forEach(item => {
-    rawSubTotal += (item.sellingPrice - (item.discount || 0)) * item.quantity;
-  });
-
-  let totalCgst = 0;
-  let totalSgst = 0;
-  const globalDiscount = state.discount || 0;
-
   state.items.forEach(item => {
     const discountedPrice = item.sellingPrice - (item.discount || 0);
     const lineTotal = discountedPrice * item.quantity;
     subTotal += lineTotal;
-
-    // Distribute global discount proportionally to this line item
-    const proportion = rawSubTotal > 0 ? (lineTotal / rawSubTotal) : 0;
-    const itemGlobalDiscount = globalDiscount * proportion;
-    
-    const taxableAmount = Math.max(0, lineTotal - itemGlobalDiscount);
-    
-    // Calculate item tax based on product's tax percentage
-    const itemTaxPercent = item.tax || 0;
-    const itemTaxAmount = taxableAmount * (itemTaxPercent / 100);
-    
-    totalCgst += itemTaxAmount / 2;
-    totalSgst += itemTaxAmount / 2;
   });
   
-  const taxAmount = totalCgst + totalSgst;
-  const grandTotal = Math.max(0, subTotal + taxAmount - globalDiscount);
+  const taxableAmount = Math.max(0, subTotal - state.discount);
+  const taxAmount = taxableAmount * (state.tax / 100);
+  const grandTotal = taxableAmount + taxAmount;
 
   return {
     subTotal,
-    cgstAmount: totalCgst,
-    sgstAmount: totalSgst,
     taxAmount,
     grandTotal
   };
@@ -92,6 +69,9 @@ const cartSlice = createSlice({
     setCartDiscount(state, action) {
       state.discount = Math.max(0, Number(action.payload));
     },
+    setCartTax(state, action) {
+      state.tax = Math.max(0, Number(action.payload));
+    },
 
     setCustomer(state, action) {
       state.customer = action.payload;
@@ -102,6 +82,7 @@ const cartSlice = createSlice({
     clearCart(state) {
       state.items = [];
       state.discount = 0;
+      state.tax = 10;
       // Note: Keep customer and warehouse to avoid re-selecting every sale
     },
     resetCartFull(state) {
@@ -116,6 +97,7 @@ export const {
   updateQuantity,
   updateItemDiscount,
   setCartDiscount,
+  setCartTax,
   setCustomer,
   setWarehouse,
   clearCart,
