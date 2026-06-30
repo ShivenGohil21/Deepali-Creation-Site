@@ -132,6 +132,7 @@ const Purchases = () => {
   const [discount, setDiscount] = useState(0);
 
   const [gstRate, setGstRate] = useState(10);
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
