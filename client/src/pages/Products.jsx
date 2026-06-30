@@ -15,8 +15,173 @@ import {
   CheckCircle,
   QrCode,
   RefreshCw,
-  Sliders
+  Sliders,
+  Barcode,
+  Save
 } from 'lucide-react';
+
+const BARCODE_STYLES = {
+  '40-a4': {
+    name: '40 per sheet (A4) (52.5mm x 29.7mm)',
+    cols: 4,
+    rows: 10,
+    width: '52.5mm',
+    height: '29.7mm',
+    marginTop: '0mm',
+    marginLeft: '0mm',
+    imgHeight: '9.5mm',
+    fontSizeName: '8px',
+    fontSizeNo: '8px',
+    fontSizePrice: '9px',
+    gap: '0mm',
+    padding: '1mm',
+    isA4: true
+  },
+  '30-a4': {
+    name: '30 per sheet (A4) (69.8mm x 29.7mm)',
+    cols: 3,
+    rows: 10,
+    width: '69.8mm',
+    height: '29.7mm',
+    marginTop: '0mm',
+    marginLeft: '0.3mm',
+    imgHeight: '10mm',
+    fontSizeName: '8px',
+    fontSizeNo: '8px',
+    fontSizePrice: '9.5px',
+    gap: '0mm',
+    padding: '1.2mm',
+    isA4: true
+  },
+  '24-a4': {
+    name: '24 per sheet (A4) (69.8mm x 35mm)',
+    cols: 3,
+    rows: 8,
+    width: '69.8mm',
+    height: '35mm',
+    marginTop: '8.5mm',
+    marginLeft: '0.3mm',
+    imgHeight: '12mm',
+    fontSizeName: '9px',
+    fontSizeNo: '8.5px',
+    fontSizePrice: '10px',
+    gap: '0mm',
+    padding: '1.5mm',
+    isA4: true
+  },
+  '20-a4': {
+    name: '20 per sheet (A4) (98mm x 28mm)',
+    cols: 2,
+    rows: 10,
+    width: '98mm',
+    height: '28mm',
+    marginTop: '8.5mm',
+    marginLeft: '7mm',
+    imgHeight: '9.5mm',
+    fontSizeName: '8.5px',
+    fontSizeNo: '8.5px',
+    fontSizePrice: '10px',
+    gap: '0mm',
+    padding: '1.2mm',
+    isA4: true
+  },
+  '18-a4': {
+    name: '18 per sheet (A4) (69.8mm x 49.5mm)',
+    cols: 3,
+    rows: 6,
+    width: '69.8mm',
+    height: '49.5mm',
+    marginTop: '0mm',
+    marginLeft: '0.3mm',
+    imgHeight: '18mm',
+    fontSizeName: '10.5px',
+    fontSizeNo: '9.5px',
+    fontSizePrice: '11.5px',
+    gap: '0mm',
+    padding: '2.5mm',
+    isA4: true
+  },
+  '14-a4': {
+    name: '14 per sheet (A4) (99.1mm x 38.1mm)',
+    cols: 2,
+    rows: 7,
+    width: '99.1mm',
+    height: '38.1mm',
+    marginTop: '15.15mm',
+    marginLeft: '5.9mm',
+    imgHeight: '13mm',
+    fontSizeName: '10px',
+    fontSizeNo: '9px',
+    fontSizePrice: '11px',
+    gap: '0mm',
+    padding: '1.8mm',
+    isA4: true
+  },
+  '12-a4-3cols': {
+    name: '12 per sheet (A4) (3 columns, 69.8mm x 70mm)',
+    cols: 3,
+    rows: 4,
+    width: '69.8mm',
+    height: '70mm',
+    marginTop: '8.5mm',
+    marginLeft: '0.3mm',
+    imgHeight: '26mm',
+    fontSizeName: '11.5px',
+    fontSizeNo: '10px',
+    fontSizePrice: '12.5px',
+    gap: '0mm',
+    padding: '3.5mm',
+    isA4: true
+  },
+  '12-a4-2cols': {
+    name: '12 per sheet (A4) (2 columns, 104.7mm x 49.4mm)',
+    cols: 2,
+    rows: 6,
+    width: '104.7mm',
+    height: '49.4mm',
+    marginTop: '0.3mm',
+    marginLeft: '0.3mm',
+    imgHeight: '18mm',
+    fontSizeName: '11px',
+    fontSizeNo: '10px',
+    fontSizePrice: '12px',
+    gap: '0mm',
+    padding: '2.5mm',
+    isA4: true
+  },
+  '10-a4': {
+    name: '10 per sheet (A4) (99.1mm x 57.2mm)',
+    cols: 2,
+    rows: 5,
+    width: '99.1mm',
+    height: '57.2mm',
+    marginTop: '5.5mm',
+    marginLeft: '5.9mm',
+    imgHeight: '20mm',
+    fontSizeName: '11.5px',
+    fontSizeNo: '10.5px',
+    fontSizePrice: '12.5px',
+    gap: '0mm',
+    padding: '3.5mm',
+    isA4: true
+  },
+  'continuous': {
+    name: 'Continuous feed (31mm x 23mm)',
+    cols: 1,
+    rows: 1,
+    width: '3.1cm',
+    height: '2.3cm',
+    marginTop: '0mm',
+    marginLeft: '0mm',
+    imgHeight: '11mm',
+    fontSizeName: '7px',
+    fontSizeNo: '6.5px',
+    fontSizePrice: '7.5px',
+    gap: '0px',
+    padding: '2px',
+    isA4: false
+  }
+};
 
 const Products = () => {
   const { user } = useSelector((state) => state.auth);
@@ -74,6 +239,13 @@ const Products = () => {
   // Selection states for Excel export
   const [selectedProductIds, setSelectedProductIds] = useState([]);
 
+  // Bulk Barcode printing state
+  const [showBulkBarcodeModal, setShowBulkBarcodeModal] = useState(false);
+  const [bulkBarcodeItems, setBulkBarcodeItems] = useState([]);
+  const [printStyle, setPrintStyle] = useState('24-a4');
+  const [tempPrintStyle, setTempPrintStyle] = useState('24-a4');
+  const [bulkBarcodeLoading, setBulkBarcodeLoading] = useState(false);
+
   const handleSelectProduct = (productId) => {
     if (selectedProductIds.includes(productId)) {
       setSelectedProductIds(selectedProductIds.filter(id => id !== productId));
@@ -121,6 +293,101 @@ const Products = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleOpenBulkBarcode = async () => {
+    if (selectedProductIds.length === 0) {
+      alert('Please select at least one product using the checkboxes to print barcodes.');
+      return;
+    }
+
+    try {
+      setBulkBarcodeLoading(true);
+      const productIds = selectedProductIds;
+      
+      const res = await API.post('/products/barcode-bulk', { productIds });
+      if (res.data.success) {
+        const barcodeDataMap = {};
+        res.data.data.forEach(item => {
+          barcodeDataMap[item.productId] = item;
+        });
+
+        const initialBarcodeItems = products
+          .filter(p => selectedProductIds.includes(p._id))
+          .map(prod => {
+            const barcodeInfo = barcodeDataMap[prod._id] || {};
+            const currentStock = prod.stockQuantity !== undefined ? prod.stockQuantity : 0;
+            return {
+              product: prod,
+              purchaseQuantity: 0,
+              currentStock: currentStock,
+              quantity: currentStock > 0 ? currentStock : 1,
+              customPrice: Number(prod.sellingPrice || 0),
+              selected: true,
+              barcodeImage: barcodeInfo.barcodeImage || '',
+              productName: prod.code ? `${prod.name} - ${isNaN(parseInt(prod.code, 10)) ? prod.code : parseInt(prod.code, 10)}` : prod.name,
+              productColor: prod.color || '',
+              barcodeValue: prod.barcodeValue || prod.code,
+              shopName: barcodeInfo.shopName || 'Deepali Creation'
+            };
+          });
+
+        setBulkBarcodeItems(initialBarcodeItems);
+        setPrintStyle('24-a4');
+        setTempPrintStyle('24-a4');
+        setShowBulkBarcodeModal(true);
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message, 'error');
+    } finally {
+      setBulkBarcodeLoading(false);
+    }
+  };
+
+  const handleBulkBarcodeQtyChange = (idx, val) => {
+    const updated = [...bulkBarcodeItems];
+    updated[idx].quantity = Math.max(0, parseInt(val) || 0);
+    setBulkBarcodeItems(updated);
+  };
+
+  const handleBulkBarcodePriceChange = (idx, val) => {
+    const updated = [...bulkBarcodeItems];
+    updated[idx].customPrice = Math.max(0, parseFloat(val) || 0);
+    setBulkBarcodeItems(updated);
+  };
+
+  const handleBulkBarcodeSelectToggle = (idx) => {
+    const updated = [...bulkBarcodeItems];
+    updated[idx].selected = !updated[idx].selected;
+    setBulkBarcodeItems(updated);
+  };
+
+  const handleBulkBarcodeSetAllToCurrentStock = () => {
+    setBulkBarcodeItems(prev => prev.map(item => ({ ...item, quantity: item.currentStock > 0 ? item.currentStock : 1 })));
+  };
+
+  const handleBulkBarcodeSetAllToFixedQty = (qty) => {
+    setBulkBarcodeItems(prev => prev.map(item => ({ ...item, quantity: qty })));
+  };
+
+  const handleUpdateProductPrice = async (idx) => {
+    const item = bulkBarcodeItems[idx];
+    if (!item || !item.product || !item.product._id) return;
+    
+    try {
+      const res = await API.put(`/products/${item.product._id}`, {
+        sellingPrice: Number(item.customPrice)
+      });
+      if (res.data.success) {
+        showToast(`Updated database selling price for "${item.productName}" to ₹${Number(item.customPrice).toFixed(2)}.`);
+        
+        const updated = [...bulkBarcodeItems];
+        updated[idx].product.sellingPrice = Number(item.customPrice);
+        setBulkBarcodeItems(updated);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
   };
 
   const fetchInitialData = async () => {
@@ -399,6 +666,19 @@ const Products = () => {
               >
                 <FileDown size={16} />
                 <span>Excel Export ({selectedProductIds.length})</span>
+              </button>
+              <button
+                onClick={handleOpenBulkBarcode}
+                disabled={selectedProductIds.length === 0}
+                className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs shadow-md shadow-indigo-700/10 active:scale-95 transition-all"
+                id="print-barcodes-btn"
+              >
+                {bulkBarcodeLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Barcode size={16} />
+                )}
+                <span>Print Barcodes ({selectedProductIds.length})</span>
               </button>
               <button
                 onClick={() => {
@@ -856,6 +1136,436 @@ const Products = () => {
                 </div>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* MODAL 3: Bulk Barcode Printing Wizard */}
+        {showBulkBarcodeModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl p-6 space-y-4 no-print max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-white">Product Barcodes Printing Wizard</h3>
+                  <p className="text-xs text-slate-400">Configure sticker sheets for the selected products.</p>
+                </div>
+                <button onClick={() => setShowBulkBarcodeModal(false)} className="text-slate-400 hover:text-slate-200">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Config & Table area */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
+                
+                {/* Print Layout Selection Dropdown */}
+                <div className="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-850 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-350 block mb-1">Select Sticker Layout Style *</span>
+                    <p className="text-[10px] text-slate-400 font-medium">Choose the label sheet format or choose Continuous feed for thermal label printing.</p>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0 w-full md:w-auto">
+                    <select
+                      value={tempPrintStyle}
+                      onChange={(e) => setTempPrintStyle(e.target.value)}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 text-xs font-bold focus:outline-none focus:border-primary-500 shadow-sm w-full md:w-64"
+                    >
+                      {Object.entries(BARCODE_STYLES).map(([key, styleObj]) => (
+                        <option key={key} value={key}>
+                          {styleObj.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPrintStyle(tempPrintStyle);
+                        showToast('Applied print layout style settings.');
+                      }}
+                      className="bg-primary-600 hover:bg-primary-500 text-white py-2 px-4 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center space-x-1.5 shrink-0"
+                    >
+                      <RefreshCw size={14} />
+                      <span>Update</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table Actions & Title */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 px-1">
+                  <span className="text-xs font-bold text-slate-500">Items List ({bulkBarcodeItems.length})</span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleBulkBarcodeSetAllToCurrentStock}
+                      className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-350 py-1.5 px-3 rounded-lg font-bold transition-all shadow-sm active:scale-95"
+                    >
+                      Set all to Current Stock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkBarcodeSetAllToFixedQty(1)}
+                      className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-350 py-1.5 px-3 rounded-lg font-bold transition-all shadow-sm active:scale-95"
+                    >
+                      Set all to 1 Copy
+                    </button>
+                  </div>
+                </div>
+
+                {/* Items List Table */}
+                <div className="border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden bg-slate-50/20 dark:bg-slate-950/40">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold">
+                        <th className="px-4 py-3 text-center w-12">
+                          <input
+                            type="checkbox"
+                            checked={bulkBarcodeItems.length > 0 && bulkBarcodeItems.every(item => item.selected)}
+                            onChange={() => {
+                              const allSelected = bulkBarcodeItems.every(item => item.selected);
+                              setBulkBarcodeItems(bulkBarcodeItems.map(item => ({ ...item, selected: !allSelected })));
+                            }}
+                            className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                          />
+                        </th>
+                        <th className="px-4 py-3">Product Info</th>
+                        <th className="px-4 py-3 text-center">Current Stock (Pcs)</th>
+                        <th className="px-4 py-3 text-center">Cost Price</th>
+                        <th className="px-4 py-3 text-center">Selling Price (₹)</th>
+                        <th className="px-4 py-3 text-center">Stickers to Print</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {bulkBarcodeItems.map((item, idx) => (
+                        <tr 
+                          key={idx} 
+                          className={`text-slate-700 dark:text-slate-350 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${
+                            !item.selected ? 'opacity-50' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={item.selected}
+                              onChange={() => handleBulkBarcodeSelectToggle(idx)}
+                              className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-slate-900 dark:text-white">
+                              {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Code: {item.product?.code} | Barcode: {item.barcodeValue}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center font-bold text-slate-800 dark:text-white">
+                            {item.currentStock}
+                          </td>
+                          <td className="px-4 py-3 text-center font-mono text-[11px]">
+                            ₹{Number(item.product?.costPrice || 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="inline-flex items-center justify-center space-x-1">
+                              <span className="text-slate-400">₹</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={item.customPrice}
+                                disabled={!item.selected}
+                                onChange={(e) => handleBulkBarcodePriceChange(idx, e.target.value)}
+                                className="w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-semibold text-xs focus:outline-none focus:border-primary-500 disabled:bg-slate-100 dark:disabled:bg-slate-950"
+                              />
+                              {item.selected && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateProductPrice(idx)}
+                                  title="Update this price in database"
+                                  className="p-1 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition"
+                                >
+                                  <Save size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={item.quantity}
+                              disabled={!item.selected}
+                              onChange={(e) => handleBulkBarcodeQtyChange(idx, e.target.value)}
+                              className="w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-center font-bold text-xs focus:outline-none focus:border-primary-500 disabled:bg-slate-100 dark:disabled:bg-slate-950"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Preview Sheet Card */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-350 block">Sticker Sheet Print Preview</span>
+                  <div className="border border-slate-200 dark:border-slate-800 p-6 rounded-2xl bg-slate-100 dark:bg-slate-950/80 max-h-72 overflow-y-auto overflow-x-auto flex justify-center">
+                    {bulkBarcodeItems.filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0)).length === 0 ? (
+                      <div className="text-slate-400 text-xs py-8">Select products and set print quantities to preview.</div>
+                    ) : (
+                      <div 
+                        className="bg-white p-4 shadow-inner rounded border border-slate-300 text-black"
+                        style={printStyle !== 'continuous' ? {
+                          display: 'grid',
+                          gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, ${BARCODE_STYLES[printStyle].width})`,
+                          gap: BARCODE_STYLES[printStyle].gap,
+                          width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
+                          boxSizing: 'border-box',
+                          paddingTop: BARCODE_STYLES[printStyle].marginTop,
+                          paddingBottom: BARCODE_STYLES[printStyle].marginTop,
+                          paddingLeft: BARCODE_STYLES[printStyle].marginLeft,
+                          paddingRight: BARCODE_STYLES[printStyle].marginLeft,
+                        } : {
+                          display: 'grid',
+                          gridTemplateColumns: '1fr',
+                          gap: '8px',
+                          width: '280px'
+                        }}
+                      >
+                        {bulkBarcodeItems
+                          .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
+                          .flatMap((item, itemIdx) => 
+                            Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
+                              <div 
+                                key={`${itemIdx}-${copyIdx}`}
+                                className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
+                                style={printStyle === 'continuous' ? {
+                                  width: '3.1cm',
+                                  height: '2.3cm',
+                                  padding: BARCODE_STYLES[printStyle].padding,
+                                  boxSizing: 'border-box',
+                                  pageBreakInside: 'avoid',
+                                  breakInside: 'avoid',
+                                  border: '1px solid #ddd'
+                                } : {
+                                  width: BARCODE_STYLES[printStyle].width,
+                                  height: BARCODE_STYLES[printStyle].height,
+                                  padding: BARCODE_STYLES[printStyle].padding,
+                                  boxSizing: 'border-box',
+                                  pageBreakInside: 'avoid',
+                                  breakInside: 'avoid',
+                                  border: '0.1mm solid #e2e8f0'
+                                }}
+                              >
+                                <p 
+                                  className="font-extrabold uppercase leading-none text-slate-900 truncate w-full"
+                                  style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName, letterSpacing: '0.3px' }}
+                                >
+                                  {item.shopName}
+                                </p>
+                                <p 
+                                  className="font-bold leading-tight truncate w-full"
+                                  style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                                >
+                                  {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                                </p>
+                                <img 
+                                  src={item.barcodeImage} 
+                                  alt="Barcode" 
+                                  className="mx-auto object-contain max-w-[95%]"
+                                  style={{ 
+                                    height: BARCODE_STYLES[printStyle].imgHeight,
+                                    imageRendering: 'pixelated'
+                                  }}
+                                />
+                                <div 
+                                  className="flex items-center justify-between font-bold w-full font-mono leading-none text-slate-700 gap-2 px-1"
+                                  style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
+                                >
+                                  <span>No: {item.barcodeValue}</span>
+                                  <span className="font-extrabold text-black" style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}>
+                                    ₹{Number(item.customPrice || 0).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Actions Footer */}
+              <div className="flex items-center justify-end space-x-2 border-t border-slate-100 dark:border-slate-800 pt-3 shrink-0">
+                <button
+                  onClick={() => setShowBulkBarcodeModal(false)}
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  disabled={bulkBarcodeItems.filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0)).length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-md active:scale-95 transition-all"
+                  id="print-stickers-execute-btn"
+                >
+                  <Printer size={15} />
+                  <span>Print Sticker Sheet</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PRINT-ONLY AREA: Hidden on web screens, renders on trigger print */}
+        {showBulkBarcodeModal && bulkBarcodeItems.length > 0 && (
+          <div className="hidden print-area bg-white text-black font-sans w-full">
+            {printStyle === 'continuous' ? (
+              /* Single Thermal layout printed sequentially */
+              <div className="space-y-4 bg-white">
+                {bulkBarcodeItems
+                  .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
+                  .flatMap((item, itemIdx) => 
+                    Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
+                      <div 
+                        key={`print-thermal-${itemIdx}-${copyIdx}`}
+                        className="flex justify-center items-center p-0.5 bg-white text-black mx-auto"
+                        style={{
+                          width: '3.1cm',
+                          height: '2.3cm',
+                          pageBreakAfter: 'always',
+                          pageBreakInside: 'avoid',
+                          breakInside: 'avoid'
+                        }}
+                      >
+                        <div 
+                          className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border"
+                          style={{ padding: BARCODE_STYLES[printStyle].padding }}
+                        >
+                          <p 
+                            className="font-semibold uppercase leading-tight text-black m-0 p-0"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                          >
+                            {item.shopName}
+                          </p>
+                          <p 
+                            className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
+                            style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
+                          >
+                            {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                          </p>
+                          <p 
+                            className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
+                          >
+                            PRICE {Number(item.customPrice || 0).toFixed(2)}
+                          </p>
+                          <img 
+                            src={item.barcodeImage} 
+                            alt="Barcode" 
+                            className="object-contain max-w-[95%] mx-auto"
+                            style={{ 
+                              height: BARCODE_STYLES[printStyle].imgHeight,
+                              imageRendering: 'pixelated'
+                            }}
+                          />
+                          <p 
+                            className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
+                          >
+                            {item.barcodeValue}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+              </div>
+            ) : (
+              /* Custom grid layout printed on sheet */
+              <div className="w-full mx-auto box-border">
+                {(() => {
+                  const itemsPerPage = parseInt(printStyle.split('-')[0], 10);
+                  const allItems = bulkBarcodeItems
+                    .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
+                    .flatMap((item) => 
+                      Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).fill(item)
+                    );
+                  
+                  const pages = [];
+                  for (let i = 0; i < allItems.length; i += itemsPerPage) {
+                    pages.push(allItems.slice(i, i + itemsPerPage));
+                  }
+
+                  return pages.map((pageItems, pageIdx) => (
+                    <div 
+                      key={`page-${pageIdx}`}
+                      className="bg-white text-black mx-auto"
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, ${BARCODE_STYLES[printStyle].width})`,
+                        gridTemplateRows: `repeat(${BARCODE_STYLES[printStyle].rows}, ${BARCODE_STYLES[printStyle].height})`,
+                        gap: BARCODE_STYLES[printStyle].gap,
+                        paddingTop: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginTop : '0mm',
+                        paddingBottom: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginTop : '0mm',
+                        paddingLeft: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginLeft : '0mm',
+                        paddingRight: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginLeft : '0mm',
+                        width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
+                        height: BARCODE_STYLES[printStyle].isA4 ? '297mm' : 'auto',
+                        boxSizing: 'border-box',
+                        pageBreakAfter: 'always',
+                        breakAfter: 'page'
+                      }}
+                    >
+                      {pageItems.map((item, itemIdx) => (
+                        <div 
+                          key={`print-grid-${pageIdx}-${itemIdx}`}
+                          className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
+                          style={{
+                            height: BARCODE_STYLES[printStyle].height,
+                            padding: BARCODE_STYLES[printStyle].padding,
+                            boxSizing: 'border-box',
+                            pageBreakInside: 'avoid',
+                            breakInside: 'avoid',
+                            border: BARCODE_STYLES[printStyle].isA4 ? '0.1mm solid #f1f5f9' : '1px solid #ddd'
+                          }}
+                        >
+                          <p 
+                            className="font-semibold uppercase leading-tight text-black m-0 p-0"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                          >
+                            {item.shopName}
+                          </p>
+                          <p 
+                            className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
+                            style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
+                          >
+                            {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                          </p>
+                          <p 
+                            className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
+                          >
+                            PRICE {Number(item.customPrice || 0).toFixed(2)}
+                          </p>
+                          <img 
+                            src={item.barcodeImage} 
+                            alt="Barcode" 
+                            className="object-contain max-w-[95%] mx-auto"
+                            style={{ 
+                              height: BARCODE_STYLES[printStyle].imgHeight,
+                              imageRendering: 'pixelated'
+                            }}
+                          />
+                          <p 
+                            className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
+                            style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
+                          >
+                            {item.barcodeValue}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
           </div>
         )}
 

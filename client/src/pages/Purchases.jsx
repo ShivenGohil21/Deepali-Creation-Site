@@ -4,105 +4,157 @@ import { Plus, List, ArrowLeft, Trash2, CheckCircle, AlertTriangle, HelpCircle, 
 
 const BARCODE_STYLES = {
   '40-a4': {
-    name: '40 per sheet (a4) (1.799" x 1.003")',
+    name: '40 per sheet (A4) (52.5mm x 29.7mm)',
     cols: 4,
-    height: '1.003in',
-    imgHeight: '0.4in',
-    fontSizeName: '11px',
-    fontSizeNo: '12px',
-    fontSizePrice: '11px',
-    gap: '0in',
-    padding: '0.05in',
+    rows: 10,
+    width: '52.5mm',
+    height: '29.7mm',
+    marginTop: '0mm',
+    marginLeft: '0mm',
+    imgHeight: '9.5mm',
+    fontSizeName: '8px',
+    fontSizeNo: '8px',
+    fontSizePrice: '9px',
+    gap: '0mm',
+    padding: '1mm',
     isA4: true
   },
-  '30-sheet': {
-    name: '30 per sheet (2.625" x 1")',
+  '30-a4': {
+    name: '30 per sheet (A4) (69.8mm x 29.7mm)',
     cols: 3,
-    height: '1in',
-    imgHeight: '13mm',
-    fontSizeName: '8.5px',
-    fontSizeNo: '7.5px',
-    fontSizePrice: '9px',
-    gap: '3mm',
-    padding: '5px',
-    isA4: false
+    rows: 10,
+    width: '69.8mm',
+    height: '29.7mm',
+    marginTop: '0mm',
+    marginLeft: '0.3mm',
+    imgHeight: '10mm',
+    fontSizeName: '8px',
+    fontSizeNo: '8px',
+    fontSizePrice: '9.5px',
+    gap: '0mm',
+    padding: '1.2mm',
+    isA4: true
   },
   '24-a4': {
-    name: '24 per sheet (a4) (2.48" x 1.334")',
+    name: '24 per sheet (A4) (69.8mm x 35mm)',
     cols: 3,
-    height: '1.334in',
-    imgHeight: '18mm',
-    fontSizeName: '9.5px',
-    fontSizeNo: '8px',
+    rows: 8,
+    width: '69.8mm',
+    height: '35mm',
+    marginTop: '8.5mm',
+    marginLeft: '0.3mm',
+    imgHeight: '12mm',
+    fontSizeName: '9px',
+    fontSizeNo: '8.5px',
     fontSizePrice: '10px',
-    gap: '3mm',
-    padding: '6px',
+    gap: '0mm',
+    padding: '1.5mm',
     isA4: true
   },
-  '20-sheet': {
-    name: '20 per sheet (4" x 1")',
+  '20-a4': {
+    name: '20 per sheet (A4) (98mm x 28mm)',
     cols: 2,
-    height: '1in',
-    imgHeight: '13mm',
-    fontSizeName: '9px',
-    fontSizeNo: '8px',
+    rows: 10,
+    width: '98mm',
+    height: '28mm',
+    marginTop: '8.5mm',
+    marginLeft: '7mm',
+    imgHeight: '9.5mm',
+    fontSizeName: '8.5px',
+    fontSizeNo: '8.5px',
     fontSizePrice: '10px',
-    gap: '4mm',
-    padding: '5px',
-    isA4: false
+    gap: '0mm',
+    padding: '1.2mm',
+    isA4: true
   },
   '18-a4': {
-    name: '18 per sheet (a4) (2.5" x 1.835")',
+    name: '18 per sheet (A4) (69.8mm x 49.5mm)',
     cols: 3,
-    height: '1.835in',
-    imgHeight: '25mm',
-    fontSizeName: '11px',
-    fontSizeNo: '9px',
-    fontSizePrice: '11.5px',
-    gap: '3.5mm',
-    padding: '8px',
-    isA4: true
-  },
-  '14-sheet': {
-    name: '14 per sheet (4" x 1.33")',
-    cols: 2,
-    height: '1.33in',
+    rows: 6,
+    width: '69.8mm',
+    height: '49.5mm',
+    marginTop: '0mm',
+    marginLeft: '0.3mm',
     imgHeight: '18mm',
     fontSizeName: '10.5px',
-    fontSizeNo: '9px',
-    fontSizePrice: '11px',
-    gap: '4mm',
-    padding: '6px',
-    isA4: false
-  },
-  '12-a4': {
-    name: '12 per sheet (a4) (2.5" x 2.834")',
-    cols: 3,
-    height: '2.834in',
-    imgHeight: '42mm',
-    fontSizeName: '12px',
-    fontSizeNo: '10px',
-    fontSizePrice: '13px',
-    gap: '4mm',
-    padding: '8px',
+    fontSizeNo: '9.5px',
+    fontSizePrice: '11.5px',
+    gap: '0mm',
+    padding: '2.5mm',
     isA4: true
   },
-  '10-sheet': {
-    name: '10 per sheet (4" x 2")',
+  '14-a4': {
+    name: '14 per sheet (A4) (99.1mm x 38.1mm)',
     cols: 2,
-    height: '2in',
-    imgHeight: '28mm',
-    fontSizeName: '12px',
+    rows: 7,
+    width: '99.1mm',
+    height: '38.1mm',
+    marginTop: '15.15mm',
+    marginLeft: '5.9mm',
+    imgHeight: '13mm',
+    fontSizeName: '10px',
+    fontSizeNo: '9px',
+    fontSizePrice: '11px',
+    gap: '0mm',
+    padding: '1.8mm',
+    isA4: true
+  },
+  '12-a4-3cols': {
+    name: '12 per sheet (A4) (3 columns, 69.8mm x 70mm)',
+    cols: 3,
+    rows: 4,
+    width: '69.8mm',
+    height: '70mm',
+    marginTop: '8.5mm',
+    marginLeft: '0.3mm',
+    imgHeight: '26mm',
+    fontSizeName: '11.5px',
     fontSizeNo: '10px',
-    fontSizePrice: '13px',
-    gap: '4.5mm',
-    padding: '8px',
-    isA4: false
+    fontSizePrice: '12.5px',
+    gap: '0mm',
+    padding: '3.5mm',
+    isA4: true
+  },
+  '12-a4-2cols': {
+    name: '12 per sheet (A4) (2 columns, 104.7mm x 49.4mm)',
+    cols: 2,
+    rows: 6,
+    width: '104.7mm',
+    height: '49.4mm',
+    marginTop: '0.3mm',
+    marginLeft: '0.3mm',
+    imgHeight: '18mm',
+    fontSizeName: '11px',
+    fontSizeNo: '10px',
+    fontSizePrice: '12px',
+    gap: '0mm',
+    padding: '2.5mm',
+    isA4: true
+  },
+  '10-a4': {
+    name: '10 per sheet (A4) (99.1mm x 57.2mm)',
+    cols: 2,
+    rows: 5,
+    width: '99.1mm',
+    height: '57.2mm',
+    marginTop: '5.5mm',
+    marginLeft: '5.9mm',
+    imgHeight: '20mm',
+    fontSizeName: '11.5px',
+    fontSizeNo: '10.5px',
+    fontSizePrice: '12.5px',
+    gap: '0mm',
+    padding: '3.5mm',
+    isA4: true
   },
   'continuous': {
-    name: 'Continuous feed (3.1cm x 2.3cm)',
+    name: 'Continuous feed (31mm x 23mm)',
     cols: 1,
-    height: '23mm',
+    rows: 1,
+    width: '3.1cm',
+    height: '2.3cm',
+    marginTop: '0mm',
+    marginLeft: '0mm',
     imgHeight: '11mm',
     fontSizeName: '7px',
     fontSizeNo: '6.5px',
@@ -873,9 +925,7 @@ const Purchases = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      if (tempProduct) {
-                        qtyInputRef.current?.focus();
-                      } else {
+                      if (!tempProduct) {
                         const cleanedQuery = prodSearch.trim().toLowerCase();
                         if (cleanedQuery) {
                           const exactMatch = products.find(p => 
@@ -887,9 +937,6 @@ const Purchases = () => {
                             setTempProduct(exactMatch._id);
                             setTempCostPrice(exactMatch.costPrice);
                             setTempQty('');
-                            setTimeout(() => {
-                              qtyInputRef.current?.focus();
-                            }, 50);
                           }
                         }
                       }
@@ -911,9 +958,6 @@ const Purchases = () => {
                         setTempProduct(exactMatch._id);
                         setTempCostPrice(exactMatch.costPrice);
                         setTempQty('');
-                        setTimeout(() => {
-                          qtyInputRef.current?.focus();
-                        }, 50);
                       }
                     }
                   }}
@@ -944,9 +988,6 @@ const Purchases = () => {
                     if (prod) {
                       setTempCostPrice(prod.costPrice);
                       setTempQty(''); // Default quantity to empty string when selected
-                      setTimeout(() => {
-                        qtyInputRef.current?.focus();
-                      }, 50);
                     } else {
                       setTempCostPrice('');
                       setTempQty('');
@@ -979,12 +1020,6 @@ const Purchases = () => {
                   step="0.01"
                   placeholder="Cost price"
                   value={tempCostPrice}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      qtyInputRef.current?.focus();
-                    }
-                  }}
                   onChange={(e) => setTempCostPrice(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
@@ -1844,18 +1879,22 @@ const Purchases = () => {
               {/* Preview Sheet Card */}
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-350 block">Sticker Sheet Print Preview</span>
-                <div className="border border-slate-200 dark:border-slate-800 p-6 rounded-2xl bg-slate-100 dark:bg-slate-950/80 max-h-72 overflow-y-auto flex justify-center">
+                <div className="border border-slate-200 dark:border-slate-800 p-6 rounded-2xl bg-slate-100 dark:bg-slate-950/80 max-h-72 overflow-y-auto overflow-x-auto flex justify-center">
                   {bulkBarcodeItems.filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0)).length === 0 ? (
                     <div className="text-slate-400 text-xs py-8">Select products and set print quantities to preview.</div>
                   ) : (
                     <div 
-                      className="bg-white p-6 shadow-inner rounded border border-slate-300 text-black"
+                      className="bg-white p-4 shadow-inner rounded border border-slate-300 text-black"
                       style={printStyle !== 'continuous' ? {
                         display: 'grid',
-                        gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, 1fr)`,
+                        gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, ${BARCODE_STYLES[printStyle].width})`,
                         gap: BARCODE_STYLES[printStyle].gap,
                         width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
-                        boxSizing: 'border-box'
+                        boxSizing: 'border-box',
+                        paddingTop: BARCODE_STYLES[printStyle].marginTop,
+                        paddingBottom: BARCODE_STYLES[printStyle].marginTop,
+                        paddingLeft: BARCODE_STYLES[printStyle].marginLeft,
+                        paddingRight: BARCODE_STYLES[printStyle].marginLeft,
                       } : {
                         display: 'grid',
                         gridTemplateColumns: '1fr',
@@ -1869,21 +1908,23 @@ const Purchases = () => {
                           Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                             <div 
                               key={`${itemIdx}-${copyIdx}`}
-                              className="border border-slate-450 rounded text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
+                              className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
                               style={printStyle === 'continuous' ? {
                                 width: '3.1cm',
                                 height: '2.3cm',
                                 padding: BARCODE_STYLES[printStyle].padding,
                                 boxSizing: 'border-box',
                                 pageBreakInside: 'avoid',
-                                breakInside: 'avoid'
+                                breakInside: 'avoid',
+                                border: '1px solid #ddd'
                               } : {
-                                width: '100%',
+                                width: BARCODE_STYLES[printStyle].width,
                                 height: BARCODE_STYLES[printStyle].height,
                                 padding: BARCODE_STYLES[printStyle].padding,
                                 boxSizing: 'border-box',
                                 pageBreakInside: 'avoid',
-                                breakInside: 'avoid'
+                                breakInside: 'avoid',
+                                border: '0.1mm solid #e2e8f0'
                               }}
                             >
                               <p 
@@ -2033,10 +2074,15 @@ const Purchases = () => {
                     className="bg-white text-black mx-auto"
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, 1fr)`,
+                      gridTemplateColumns: `repeat(${BARCODE_STYLES[printStyle].cols}, ${BARCODE_STYLES[printStyle].width})`,
+                      gridTemplateRows: `repeat(${BARCODE_STYLES[printStyle].rows}, ${BARCODE_STYLES[printStyle].height})`,
                       gap: BARCODE_STYLES[printStyle].gap,
-                      padding: BARCODE_STYLES[printStyle].isA4 ? '5mm' : '0mm',
+                      paddingTop: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginTop : '0mm',
+                      paddingBottom: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginTop : '0mm',
+                      paddingLeft: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginLeft : '0mm',
+                      paddingRight: BARCODE_STYLES[printStyle].isA4 ? BARCODE_STYLES[printStyle].marginLeft : '0mm',
                       width: BARCODE_STYLES[printStyle].isA4 ? '210mm' : '100%',
+                      height: BARCODE_STYLES[printStyle].isA4 ? '297mm' : 'auto',
                       boxSizing: 'border-box',
                       pageBreakAfter: 'always',
                       breakAfter: 'page'
@@ -2045,13 +2091,14 @@ const Purchases = () => {
                     {pageItems.map((item, itemIdx) => (
                       <div 
                         key={`print-grid-${pageIdx}-${itemIdx}`}
-                        className="border border-slate-400 text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
+                        className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
                         style={{
                           height: BARCODE_STYLES[printStyle].height,
                           padding: BARCODE_STYLES[printStyle].padding,
                           boxSizing: 'border-box',
                           pageBreakInside: 'avoid',
-                          breakInside: 'avoid'
+                          breakInside: 'avoid',
+                          border: BARCODE_STYLES[printStyle].isA4 ? '0.1mm solid #f1f5f9' : '1px solid #ddd'
                         }}
                       >
                         <p 
