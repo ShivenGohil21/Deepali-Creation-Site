@@ -236,22 +236,22 @@ const Purchases = () => {
     const cost = Number(tempCostPrice);
     const qty = Number(tempQty);
     
-    // Check if item already added
     const existingIdx = purchaseItems.findIndex(it => it.productObj?._id === prod._id);
     if (existingIdx !== -1) {
       const updated = [...purchaseItems];
-      updated[existingIdx].quantity += qty;
-      updated[existingIdx].total = updated[existingIdx].costPrice * updated[existingIdx].quantity;
-      setPurchaseItems(updated);
+      const existingItem = updated.splice(existingIdx, 1)[0];
+      existingItem.quantity += qty;
+      existingItem.total = existingItem.costPrice * existingItem.quantity;
+      setPurchaseItems([existingItem, ...updated]);
     } else {
       setPurchaseItems(prev => [
-        ...prev,
         {
           productObj: prod,
           costPrice: cost,
           quantity: qty,
           total: cost * qty
-        }
+        },
+        ...prev
       ]);
     }
 
@@ -283,8 +283,8 @@ const Purchases = () => {
 
   // Calculate totals
   const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
-  const discountAmount = subTotal * (Number(discount || 0) / 100);
-  const taxAmount = (subTotal - discountAmount) * (Number(purchaseTax || 0) / 100);
+  const discountAmount = Number(discount) || 0;
+  const taxAmount = Number(purchaseTax) || 0;
   const grandTotal = Math.max(0, subTotal - discountAmount + taxAmount);
 
   const resetForm = () => {
@@ -379,12 +379,8 @@ const Purchases = () => {
     );
     setPaymentStatus(p.paymentStatus || 'Paid');
     setAmountPaid(p.amountPaid || '');
-    const editSubTotal = p.items.reduce((sum, it) => sum + (it.total || (it.costPrice * it.quantity)), 0);
-    const discountPercent = editSubTotal > 0 ? (p.discount / editSubTotal) * 100 : 0;
-    setDiscount(Number(discountPercent.toFixed(2)));
-    const discountAmt = p.discount || 0;
-    const taxPercent = (editSubTotal - discountAmt) > 0 ? (p.tax / (editSubTotal - discountAmt)) * 100 : 0;
-    setPurchaseTax(Number(taxPercent.toFixed(2)));
+    setDiscount(p.discount || 0);
+    setPurchaseTax(p.tax || 0);
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
@@ -1208,30 +1204,28 @@ const Purchases = () => {
 
               {/* Discount Input */}
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bill Discount (%)</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bill Discount (₹)</span>
                 <input
                   type="number"
-                  placeholder="0"
+                  placeholder="0.00"
                   step="0.01"
                   min="0"
-                  max="100"
                   value={discount}
-                  onChange={(e) => setDiscount(Math.max(0, Math.min(100, Number(e.target.value))))}
+                  onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
               </div>
 
               {/* GST/Tax Input */}
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GST (%)</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">GST Amount (₹)</span>
                 <input
                   type="number"
-                  placeholder="0"
+                  placeholder="0.00"
                   step="0.01"
                   min="0"
-                  max="100"
                   value={purchaseTax}
-                  onChange={(e) => setPurchaseTax(Math.max(0, Math.min(100, Number(e.target.value))))}
+                  onChange={(e) => setPurchaseTax(Math.max(0, Number(e.target.value)))}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 />
               </div>
@@ -1294,11 +1288,11 @@ const Purchases = () => {
                   <span className="font-semibold">₹{subTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-450">Discount ({discount}%):</span>
+                  <span className="text-slate-450">Discount:</span>
                   <span className="text-red-500 font-semibold">-₹{discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-450">GST ({purchaseTax}%):</span>
+                  <span className="text-slate-450">GST:</span>
                   <span className="text-emerald-500 font-semibold">+₹{taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 text-xs font-bold text-slate-900 dark:text-white">
