@@ -14,7 +14,8 @@ import {
   Grid,
   CheckCircle,
   QrCode,
-  RefreshCw
+  RefreshCw,
+  Sliders
 } from 'lucide-react';
 
 const Products = () => {
@@ -34,13 +35,11 @@ const Products = () => {
 
   // Modals state
   const [showAddEditModal, setShowAddEditModal] = useState(false);
-  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-
-  // Barcode Print State
-  const [barcodePrintData, setBarcodePrintData] = useState(null);
-  const [printCopies, setPrintCopies] = useState(4); // Default grid count
+  const [adjustProduct, setAdjustProduct] = useState(null);
+  const [adjustNewQty, setAdjustNewQty] = useState('');
 
   // Add Product Form State
   const [formName, setFormName] = useState('');
@@ -206,35 +205,67 @@ const Products = () => {
     setShowAddEditModal(true);
   };
 
-  const handleInlineAddCategory = async () => {
-    if (!newCatName) return;
-    try {
-      const res = await API.post('/categories', { name: newCatName });
-      if (res.data.success) {
-        setCategories(prev => [...prev, res.data.data]);
-        setFormCategory(res.data.data._id);
-        setNewCatName('');
-        setInlineMsg(`Category "${res.data.data.name}" added!`);
-        setTimeout(() => setInlineMsg(''), 3000);
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
+  const handleOpenAdjust = (p) => {
+    setAdjustProduct(p);
+    setAdjustNewQty(p.stockQuantity || 0);
+    setShowAdjustModal(true);
   };
 
-  const handleInlineAddBrand = async () => {
-    if (!newBrandName) return;
+  const handleSaveAdjust = async (e) => {
+    e.preventDefault();
+    if (!adjustProduct) return;
+    
+    const newQty = Number(adjustNewQty);
+    if (isNaN(newQty) || newQty < 0) {
+      showToast('Please enter a valid positive number', 'error');
+      return;
+    }
+
+    const currentQty = adjustProduct.stockQuantity || 0;
+    const diff = newQty - currentQty;
+
+    if (diff === 0) {
+      showToast('No adjustment needed, quantity is already ' + currentQty);
+      setShowAdjustModal(false);
+      return;
+    }
+
     try {
-      const res = await API.post('/brands', { name: newBrandName });
+      setSubmitting(true);
+      // Pick the first warehouse or default if empty
+      const warehouseId = adjustProduct.warehouseStock && adjustProduct.warehouseStock.length > 0 
+        ? adjustProduct.warehouseStock[0].warehouse 
+        : (warehouses.length > 0 ? warehouses[0]._id : null);
+      
+      if (!warehouseId) {
+        showToast('No warehouse available for adjustment', 'error');
+        setSubmitting(false);
+        return;
+      }
+
+      const type = diff > 0 ? 'Addition' : 'Subtraction';
+      
+      const payload = {
+        warehouseId,
+        notes: 'Manual Adjustment from Products Catalogue',
+        items: [{
+          productId: adjustProduct._id,
+          type,
+          quantity: Math.abs(diff),
+          price: adjustProduct.costPrice || 0
+        }]
+      };
+
+      const res = await API.post('/adjustments', payload);
       if (res.data.success) {
-        setBrands(prev => [...prev, res.data.data]);
-        setFormBrand(res.data.data._id);
-        setNewBrandName('');
-        setInlineMsg(`Brand "${res.data.data.name}" added!`);
-        setTimeout(() => setInlineMsg(''), 3000);
+        showToast(`Stock successfully adjusted to ${newQty} ${adjustProduct.unit}`);
+        await fetchInitialData();
+        setShowAdjustModal(false);
       }
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.response?.data?.message || err.message, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -301,19 +332,6 @@ const Products = () => {
     }
   };
 
-  const handleOpenBarcode = async (p) => {
-    try {
-      const res = await API.get(`/products/barcode/${p._id}`);
-      if (res.data.success) {
-        setBarcodePrintData(res.data);
-        setPrintCopies(p.stockQuantity > 0 ? p.stockQuantity : 1);
-        setShowBarcodeModal(true);
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  };
-
   const handleExcelImport = async (e) => {
     e.preventDefault();
     if (!excelFile) return;
@@ -336,10 +354,6 @@ const Products = () => {
     } finally {
       setImportLoading(false);
     }
-  };
-
-  const triggerPrint = () => {
-    window.print();
   };
 
   // Filter products locally
@@ -371,7 +385,7 @@ const Products = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Product Catalog</h1>
-              <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Manage details, categories, scan tags, and print barcodes.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Manage details, categories, and inventory levels.</p>
             </div>
             <div className="flex items-center space-x-2.5">
               <button
@@ -400,7 +414,7 @@ const Products = () => {
                 id="sync-products-btn"
               >
                 <RefreshCw size={16} />
-                <span>Sync on Purchase</span>
+                <span>Sync Stock</span>
               </button>
               <button
                 onClick={handleOpenAdd}
@@ -500,15 +514,15 @@ const Products = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 text-xs">
                   {loading ? (
                     <tr>
-                      <td colSpan="11" className="text-center py-12">
+                      <td colSpan="10" className="text-center py-12">
                         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                         <span>Loading products catalogue...</span>
                       </td>
                     </tr>
                   ) : filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="11" className="text-center py-12 text-slate-400">
-                        No matching products found. Add products to populate the list.
+                      <td colSpan="10" className="text-center py-12 text-slate-400">
+                        No matching products found.
                       </td>
                     </tr>
                   ) : (
@@ -539,18 +553,16 @@ const Products = () => {
                         </td>
                         <td className="px-6 py-3.5 text-right space-x-1.5 shrink-0 whitespace-nowrap">
                           <button
-                            onClick={() => handleOpenBarcode(p)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Print Barcode"
-                            id={`print-barcode-p-${p.code}`}
+                            onClick={() => handleOpenAdjust(p)}
+                            className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Adjust Stock"
                           >
-                            <QrCode size={15} />
+                            <Sliders size={15} />
                           </button>
                           <button
                             onClick={() => handleOpenEdit(p)}
                             className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             title="Edit details"
-                            id={`edit-p-${p.code}`}
                           >
                             <Edit2 size={15} />
                           </button>
@@ -559,7 +571,6 @@ const Products = () => {
                               onClick={() => handleDeleteProduct(p._id)}
                               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                               title="Delete product"
-                              id={`delete-p-${p.code}`}
                             >
                               <Trash2 size={15} />
                             </button>
@@ -572,8 +583,7 @@ const Products = () => {
               </table>
             </div>
           </div>
-
-        </div> {/* End of fade-in container */}
+        </div>
 
         {/* MODAL 1: Add/Edit Product */}
         {showAddEditModal && (
