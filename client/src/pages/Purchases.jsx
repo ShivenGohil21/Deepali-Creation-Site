@@ -4,15 +4,15 @@ import { Plus, List, ArrowLeft, Trash2, CheckCircle, AlertTriangle, HelpCircle, 
 
 const BARCODE_STYLES = {
   '40-a4': {
-    name: '40 per sheet (a4) (1.799" x 1.003")',
+    name: '40 per sheet (a4)',
     cols: 4,
-    height: '25mm',
-    imgHeight: '12mm',
-    fontSizeName: '7.5px',
-    fontSizeNo: '7px',
-    fontSizePrice: '8px',
-    gap: '2.5mm',
-    padding: '4px',
+    height: '28.5mm',
+    imgHeight: '10mm',
+    fontSizeName: '11px',
+    fontSizeNo: '12px',
+    fontSizePrice: '11px',
+    gap: '0mm',
+    padding: '2mm',
     isA4: true
   },
   '30-sheet': {
@@ -1972,16 +1972,22 @@ const Purchases = () => {
                         style={{ padding: BARCODE_STYLES[printStyle].padding }}
                       >
                         <p 
-                          className="font-extrabold tracking-wider uppercase text-black leading-none truncate w-full"
+                          className="font-semibold uppercase leading-tight text-black m-0 p-0"
                           style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
                         >
                           {item.shopName}
                         </p>
                         <p 
-                          className="font-bold text-black leading-none truncate max-w-full"
-                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                          className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
+                          style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
                         >
                           {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                        </p>
+                        <p 
+                          className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
+                          style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
+                        >
+                          PRICE {Number(item.customPrice || 0).toFixed(2)}
                         </p>
                         <img 
                           src={item.barcodeImage} 
@@ -1992,15 +1998,12 @@ const Purchases = () => {
                             imageRendering: 'pixelated'
                           }}
                         />
-                        <div 
-                          className="flex items-center justify-between font-bold w-full px-1 text-black font-mono leading-none"
+                        <p 
+                          className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
                           style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                         >
-                          <span>No: {item.barcodeValue}</span>
-                          <span className="font-extrabold" style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}>
-                            ₹{Number(item.customPrice || 0).toFixed(2)}
-                          </span>
-                        </div>
+                          {item.barcodeValue}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -2035,16 +2038,22 @@ const Purchases = () => {
                       }}
                     >
                       <p 
-                        className="font-extrabold uppercase leading-none text-black truncate w-full"
+                        className="font-semibold uppercase leading-tight text-black m-0 p-0"
                         style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
                       >
                         {item.shopName}
                       </p>
                       <p 
-                        className="font-bold leading-tight truncate w-full text-slate-800"
-                        style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
+                        className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
+                        style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
                       >
                         {item.productName} {item.productColor ? `(${item.productColor})` : ''}
+                      </p>
+                      <p 
+                        className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
+                        style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
+                      >
+                        PRICE {Number(item.customPrice || 0).toFixed(2)}
                       </p>
                       <img 
                         src={item.barcodeImage} 
@@ -2055,15 +2064,12 @@ const Purchases = () => {
                           imageRendering: 'pixelated'
                         }}
                       />
-                      <div 
-                        className="flex items-center justify-between font-bold w-full px-1 text-black leading-none font-mono"
+                      <p 
+                        className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
                         style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                       >
-                        <span>No: {item.barcodeValue}</span>
-                        <span className="font-extrabold" style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}>
-                          ₹{Number(item.customPrice || 0).toFixed(2)}
-                        </span>
-                      </div>
+                        {item.barcodeValue}
+                      </p>
                     </div>
                   ))
                 )}
