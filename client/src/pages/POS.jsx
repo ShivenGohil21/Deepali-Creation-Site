@@ -7,7 +7,6 @@ import {
   updateQuantity,
   updateItemDiscount,
   setCartDiscount,
-  setCartTax,
   setCustomer,
   setWarehouse,
   clearCart,
@@ -32,7 +31,7 @@ import {
 
 const POS = () => {
   const dispatch = useDispatch();
-  const { items, discount, tax, customer, warehouseId } = useSelector((state) => state.cart);
+  const { items, discount, customer, warehouseId } = useSelector((state) => state.cart);
   const totals = useSelector(selectCartTotals);
 
   // References and local state
@@ -320,7 +319,7 @@ const POS = () => {
           discount: it.discount
         })),
         subTotal: totals.subTotal,
-        tax: tax,
+        tax: totals.taxAmount,
         discount: discount,
         grandTotal: totals.grandTotal,
         paymentMethod,
@@ -555,25 +554,15 @@ const POS = () => {
           <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2 text-xs">
 
             {/* Tax and general discount toggles */}
-            <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500">
+            <div className="grid grid-cols-1 gap-3 text-[11px] text-slate-500">
               <div className="flex items-center justify-between">
-                <span>Overall Bill Discount (₹)</span>
+                <span>Overall Discount (₹)</span>
                 <input
                   type="number"
                   value={discount || ''}
                   placeholder="0"
                   onChange={(e) => dispatch(setCartDiscount(e.target.value))}
-                  className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center rounded py-0.5 text-xs text-slate-800 dark:text-white"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span>General Sale Tax (%)</span>
-                <input
-                  type="number"
-                  value={tax || ''}
-                  placeholder="0"
-                  onChange={(e) => dispatch(setCartTax(e.target.value))}
-                  className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center rounded py-0.5 text-xs text-slate-800 dark:text-white"
+                  className="w-24 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center rounded py-0.5 text-xs text-slate-800 dark:text-white"
                 />
               </div>
             </div>
@@ -585,8 +574,12 @@ const POS = () => {
                 <span className="font-semibold text-slate-700 dark:text-slate-300">₹{totals.subTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Tax Amount ({tax}%):</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">₹{totals.taxAmount.toFixed(2)}</span>
+                <span className="text-slate-400">Total CGST:</span>
+                <span className="font-semibold text-emerald-500">+₹{totals.cgstAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total SGST:</span>
+                <span className="font-semibold text-emerald-500">+₹{totals.sgstAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Discount Applied:</span>
@@ -918,10 +911,18 @@ const POS = () => {
                   <span>Subtotal:</span>
                   <span>₹{checkoutInvoice.subTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Tax:</span>
-                  <span>₹{checkoutInvoice.tax}%</span>
-                </div>
+                {checkoutInvoice.tax > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>CGST:</span>
+                      <span>+₹{(checkoutInvoice.tax / 2).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>SGST:</span>
+                      <span>+₹{(checkoutInvoice.tax / 2).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span>Discount:</span>
                   <span>-₹{checkoutInvoice.discount.toFixed(2)}</span>
@@ -1060,7 +1061,12 @@ const POS = () => {
             </table>
             <div className="space-y-1 text-right text-[11px]">
               <div>Subtotal: ₹{checkoutInvoice.subTotal.toFixed(2)}</div>
-              {checkoutInvoice.tax > 0 && <div>Tax ({checkoutInvoice.tax}%): ₹{((checkoutInvoice.subTotal * checkoutInvoice.tax) / 100).toFixed(2)}</div>}
+              {checkoutInvoice.tax > 0 && (
+                <>
+                  <div>CGST: ₹{(checkoutInvoice.tax / 2).toFixed(2)}</div>
+                  <div>SGST: ₹{(checkoutInvoice.tax / 2).toFixed(2)}</div>
+                </>
+              )}
               {checkoutInvoice.discount > 0 && <div className="font-semibold text-black">Discount: -₹{checkoutInvoice.discount.toFixed(2)}</div>}
               <div className="font-extrabold text-sm border-t border-dashed border-black pt-1">
                 Grand Total: ₹{checkoutInvoice.grandTotal.toFixed(2)}
