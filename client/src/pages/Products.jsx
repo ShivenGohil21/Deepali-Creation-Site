@@ -15,7 +15,8 @@ import {
   CheckCircle,
   QrCode,
   RefreshCw,
-  Sliders
+  Sliders,
+  Barcode
 } from 'lucide-react';
 
 const Products = () => {
@@ -37,9 +38,14 @@ const Products = () => {
   const [showAddEditModal, setShowAddEditModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [adjustProduct, setAdjustProduct] = useState(null);
   const [adjustNewQty, setAdjustNewQty] = useState('');
+
+  // Barcode Print State
+  const [barcodePrintData, setBarcodePrintData] = useState(null);
+  const [printCopies, setPrintCopies] = useState(4); // Default grid count
 
   // Add Product Form State
   const [formName, setFormName] = useState('');
@@ -267,6 +273,23 @@ const Products = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleOpenBarcode = async (p) => {
+    try {
+      const res = await API.get(`/products/barcode/${p._id}`);
+      if (res.data.success) {
+        setBarcodePrintData(res.data);
+        setPrintCopies(p.stockQuantity > 0 ? p.stockQuantity : 1);
+        setShowBarcodeModal(true);
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message, 'error');
+    }
+  };
+
+  const triggerPrint = () => {
+    window.print();
   };
 
   const handleSaveProduct = async (e) => {
@@ -553,6 +576,13 @@ const Products = () => {
                         </td>
                         <td className="px-6 py-3.5 text-right space-x-1.5 shrink-0 whitespace-nowrap">
                           <button
+                            onClick={() => handleOpenBarcode(p)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Print Barcode"
+                          >
+                            <Barcode size={15} />
+                          </button>
+                          <button
                             onClick={() => handleOpenAdjust(p)}
                             className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             title="Adjust Stock"
@@ -835,7 +865,169 @@ const Products = () => {
           </div>
         )}
 
+        {/* MODAL 4: Barcode Sticker Printing */}
+        {showBarcodeModal && barcodePrintData && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl p-6 space-y-4 no-print">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Print Barcode Sticker</h3>
+                <button onClick={() => setShowBarcodeModal(false)} className="text-slate-400 hover:text-slate-200">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Print Settings Layout */}
+              <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Set Print Layout Copies</label>
+                    <div className="flex space-x-2">
+                      {[1, 4, 40].map(num => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setPrintCopies(num)}
+                          className={`flex-1 py-1 px-3 text-xs rounded-lg font-bold transition-all ${printCopies === num
+                              ? 'bg-primary-600 text-white shadow-md'
+                              : 'bg-white border dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                            }`}
+                        >
+                          {num} {num === 1 ? 'Thermal' : 'Labels'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-full sm:w-28">
+                    <label className="text-xs font-bold text-slate-500 block mb-1">Custom Qty</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={printCopies}
+                      onChange={(e) => setPrintCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-primary-500 transition"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview Sheet Card */}
+              <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl bg-slate-100 dark:bg-slate-950/80 max-h-80 overflow-y-auto flex justify-center">
+                <div className={`grid gap-2 bg-white p-3 shadow-inner rounded border ${printCopies === 1 ? 'grid-cols-1' : 'grid-cols-4'}`}>
+                  {Array.from({ length: printCopies }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`border border-slate-400/60 rounded text-center bg-white text-black flex flex-col justify-center items-center shadow-sm p-1 box-border ${printCopies === 1 ? 'w-48 h-32' : 'w-[105px] h-[72px]'
+                        }`}
+                    >
+                      <p className={`font-semibold uppercase leading-tight text-slate-900 m-0 p-0 ${printCopies === 1 ? 'text-[11px]' : 'text-[8px]'
+                        }`}>
+                        {barcodePrintData.shopName}
+                      </p>
+                      <p className={`font-bold leading-tight uppercase truncate max-w-full m-0 p-0 ${printCopies === 1 ? 'text-[12px] text-slate-800' : 'text-[9px] text-slate-800'
+                        }`}>
+                        {barcodePrintData.productName} {barcodePrintData.productColor ? `(${barcodePrintData.productColor})` : ''}
+                      </p>
+                      <p className={`font-bold leading-tight m-0 p-0 mb-0.5 ${printCopies === 1 ? 'text-[11px] text-slate-800' : 'text-[8px] text-slate-800'
+                        }`}>
+                        PRICE {barcodePrintData.sellingPrice.toFixed(2)}
+                      </p>
+                      <img
+                        src={barcodePrintData.barcodeImage}
+                        alt="Barcode Preview"
+                        className={`mx-auto object-contain max-w-full ${printCopies === 1 ? 'h-10' : 'h-6'
+                          }`}
+                      />
+                      <p className={`font-extrabold uppercase leading-none m-0 p-0 tracking-widest mt-0.5 ${printCopies === 1 ? 'text-[12px] text-black' : 'text-[9px] text-black'
+                        }`}>
+                        {barcodePrintData.barcodeValue}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end space-x-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <button
+                  onClick={() => setShowBarcodeModal(false)}
+                  className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={triggerPrint}
+                  className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5"
+                  id="print-sticker-execute-btn"
+                >
+                  <Printer size={15} />
+                  <span>Print Sticker</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* PRINT-ONLY AREA: Hidden on web screens, renders on trigger print */}
+      {barcodePrintData && (
+        <div className="hidden print-area bg-white text-black font-sans">
+          {printCopies === 1 ? (
+            /* Single Thermal layout */
+            <div className="flex justify-center items-center p-2 bg-white text-black w-[2.2in] h-[1.2in] mx-auto">
+              <div className="border border-black p-1 text-center bg-white text-black w-full h-full flex flex-col justify-center items-center rounded-sm">
+                <p className="font-semibold text-[11px] uppercase text-black leading-tight m-0 p-0">
+                  {barcodePrintData.shopName}
+                </p>
+                <p className="text-[12px] font-bold text-black leading-tight uppercase truncate max-w-full m-0 p-0">
+                  {barcodePrintData.productName} {barcodePrintData.productColor ? `(${barcodePrintData.productColor})` : ''}
+                </p>
+                <p className="font-bold text-[11px] text-black leading-tight m-0 p-0 mb-0.5">
+                  PRICE {barcodePrintData.sellingPrice.toFixed(2)}
+                </p>
+                <img
+                  src={barcodePrintData.barcodeImage}
+                  alt="Print Barcode"
+                  className="h-10 object-contain max-w-full mx-auto"
+                />
+                <p className="font-extrabold text-[12px] text-black leading-none m-0 p-0 mt-0.5 tracking-widest">
+                  {barcodePrintData.barcodeValue}
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Grid layout (A4 Sheet - 4 columns, up to 10 rows for 40 copies) */
+            <div className="print-barcode-grid grid grid-cols-4 gap-x-[3mm] gap-y-[3mm] p-[5mm] bg-white text-black w-full mx-auto box-border">
+              {Array.from({ length: printCopies }).map((_, i) => (
+                <div
+                  key={i}
+                  className="border border-slate-400 p-1 text-center bg-white text-black flex flex-col justify-center items-center rounded-sm box-border w-full"
+                  style={{ height: '26mm' }}
+                >
+                  <p className="font-semibold text-[8px] uppercase text-black leading-tight m-0 p-0">
+                    {barcodePrintData.shopName}
+                  </p>
+                  <p className="text-[9px] font-bold text-black leading-tight uppercase truncate max-w-full m-0 p-0">
+                    {barcodePrintData.productName} {barcodePrintData.productColor ? `(${barcodePrintData.productColor})` : ''}
+                  </p>
+                  <p className="font-bold text-[8px] text-black leading-tight m-0 p-0 mb-0.5">
+                    PRICE {barcodePrintData.sellingPrice.toFixed(2)}
+                  </p>
+                  <img
+                    src={barcodePrintData.barcodeImage}
+                    alt="Print Barcode"
+                    className="h-6 object-contain max-w-full mx-auto"
+                  />
+                  <p className="font-extrabold text-[9px] text-black leading-none m-0 p-0 mt-0.5 tracking-widest">
+                    {barcodePrintData.barcodeValue}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
     </>
   );
 };
