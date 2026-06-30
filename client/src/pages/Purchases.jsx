@@ -4,21 +4,21 @@ import { Plus, List, ArrowLeft, Trash2, CheckCircle, AlertTriangle, HelpCircle, 
 
 const BARCODE_STYLES = {
   '40-a4': {
-    name: '40 per sheet (a4)',
+    name: '40 per sheet (a4) (1.799" x 1.003")',
     cols: 4,
-    height: '28.5mm',
-    imgHeight: '10mm',
+    height: '1.003in',
+    imgHeight: '0.4in',
     fontSizeName: '11px',
     fontSizeNo: '12px',
     fontSizePrice: '11px',
-    gap: '0mm',
-    padding: '2mm',
+    gap: '0in',
+    padding: '0.05in',
     isA4: true
   },
   '30-sheet': {
     name: '30 per sheet (2.625" x 1")',
     cols: 3,
-    height: '25.4mm',
+    height: '1in',
     imgHeight: '13mm',
     fontSizeName: '8.5px',
     fontSizeNo: '7.5px',
@@ -30,7 +30,7 @@ const BARCODE_STYLES = {
   '24-a4': {
     name: '24 per sheet (a4) (2.48" x 1.334")',
     cols: 3,
-    height: '34mm',
+    height: '1.334in',
     imgHeight: '18mm',
     fontSizeName: '9.5px',
     fontSizeNo: '8px',
@@ -42,7 +42,7 @@ const BARCODE_STYLES = {
   '20-sheet': {
     name: '20 per sheet (4" x 1")',
     cols: 2,
-    height: '25.4mm',
+    height: '1in',
     imgHeight: '13mm',
     fontSizeName: '9px',
     fontSizeNo: '8px',
@@ -54,7 +54,7 @@ const BARCODE_STYLES = {
   '18-a4': {
     name: '18 per sheet (a4) (2.5" x 1.835")',
     cols: 3,
-    height: '46.5mm',
+    height: '1.835in',
     imgHeight: '25mm',
     fontSizeName: '11px',
     fontSizeNo: '9px',
@@ -66,7 +66,7 @@ const BARCODE_STYLES = {
   '14-sheet': {
     name: '14 per sheet (4" x 1.33")',
     cols: 2,
-    height: '34mm',
+    height: '1.33in',
     imgHeight: '18mm',
     fontSizeName: '10.5px',
     fontSizeNo: '9px',
@@ -78,7 +78,7 @@ const BARCODE_STYLES = {
   '12-a4': {
     name: '12 per sheet (a4) (2.5" x 2.834")',
     cols: 3,
-    height: '72mm',
+    height: '2.834in',
     imgHeight: '42mm',
     fontSizeName: '12px',
     fontSizeNo: '10px',
@@ -90,7 +90,7 @@ const BARCODE_STYLES = {
   '10-sheet': {
     name: '10 per sheet (4" x 2")',
     cols: 2,
-    height: '50.8mm',
+    height: '2in',
     imgHeight: '28mm',
     fontSizeName: '12px',
     fontSizeNo: '10px',
