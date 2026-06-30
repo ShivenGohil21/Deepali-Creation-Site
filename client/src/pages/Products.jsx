@@ -55,7 +55,6 @@ const Products = () => {
   const [formColor, setFormColor] = useState('');
   const [formPrefix, setFormPrefix] = useState('D'); // D, SH, TS
   const [formCode, setFormCode] = useState(''); // If empty, backend auto-generates
-  const [formBarcodeValue, setFormBarcodeValue] = useState(''); // If empty, uses code
   const [formStockQty, setFormStockQty] = useState(''); // Only used in edit flow
   const [submitting, setSubmitting] = useState(false);
 
@@ -106,9 +105,8 @@ const Products = () => {
     const rows = itemsToExport.map(p => {
       const categoryName = p.category?.name || 'N/A';
       const brandName = p.brand?.name || 'N/A';
-      const barcodeVal = p.barcodeValue || p.code;
       const statusText = p.status || 'Active';
-      return `"${p.code}","${p.name.replace(/"/g, '""')}","${(p.color || '-').replace(/"/g, '""')}","${categoryName.replace(/"/g, '""')}","${brandName.replace(/"/g, '""')}",${p.costPrice},${p.sellingPrice},"${barcodeVal}",${p.stockQuantity},"${p.unit}",${p.alertQuantity},"${statusText}"`;
+      return `"${p.code}","${p.name.replace(/"/g, '""')}","${(p.color || '-').replace(/"/g, '""')}","${categoryName.replace(/"/g, '""')}","${brandName.replace(/"/g, '""')}",${p.costPrice},${p.sellingPrice},${p.stockQuantity},"${p.unit}",${p.alertQuantity},"${statusText}"`;
     }).join('\r\n');
 
     // UTF-8 BOM to prevent Excel encoding issues
@@ -186,7 +184,6 @@ const Products = () => {
     setFormColor('');
     setFormPrefix('D');
     setFormCode('');
-    setFormBarcodeValue('');
     setFormStockQty('');
     setShowAddEditModal(true);
   };
@@ -205,7 +202,6 @@ const Products = () => {
     setFormColor(product.color || '');
     setFormPrefix(product.code.match(/^[A-Za-z]+/)?.[0] || 'D');
     setFormCode(product.code);
-    setFormBarcodeValue(product.barcodeValue);
     setFormStockQty(product.stockQuantity !== undefined ? product.stockQuantity : 0);
     setShowAddEditModal(true);
   };
@@ -268,7 +264,6 @@ const Products = () => {
       if (editingProduct) {
         // Edit flow
         payload.code = formCode || undefined;
-        payload.barcodeValue = formBarcodeValue || undefined;
         const res = await API.put(`/products/${editingProduct._id}`, payload);
         if (res.data.success) {
           showToast('Product updated successfully!');
@@ -278,7 +273,6 @@ const Products = () => {
       } else {
         // Add flow
         payload.code = formCode || undefined;
-        payload.barcodeValue = formBarcodeValue || undefined;
 
         const res = await API.post('/products', payload);
         if (res.data.success) {
@@ -352,8 +346,7 @@ const Products = () => {
   const filteredProducts = products.filter(p => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase()) ||
-      p.barcodeValue.toLowerCase().includes(search.toLowerCase());
+      p.code.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory = selectedCategory ? (p.category?._id === selectedCategory) : true;
     const matchesBrand = selectedBrand ? (p.brand?._id === selectedBrand) : true;
@@ -407,7 +400,7 @@ const Products = () => {
                 id="sync-products-btn"
               >
                 <RefreshCw size={16} />
-                <span>Sync Purchase Quantities</span>
+                <span>Sync on Purchase</span>
               </button>
               <button
                 onClick={handleOpenAdd}
@@ -500,7 +493,6 @@ const Products = () => {
                     <th className="px-6 py-3.5">Brand</th>
                     <th className="px-6 py-3.5">Cost Price</th>
                     <th className="px-6 py-3.5">Selling Price</th>
-                    <th className="px-6 py-3.5">Barcode No</th>
                     <th className="px-6 py-3.5 text-center">In Stock</th>
                     <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
@@ -537,7 +529,6 @@ const Products = () => {
                         <td className="px-6 py-3.5 text-slate-400">{p.brand?.name || 'N/A'}</td>
                         <td className="px-6 py-3.5 text-slate-400">₹{p.costPrice.toFixed(2)}</td>
                         <td className="px-6 py-3.5 font-bold text-slate-850 dark:text-slate-100">₹{p.sellingPrice.toFixed(2)}</td>
-                        <td className="px-6 py-3.5 font-mono text-[11px] text-slate-500">{p.barcodeValue}</td>
                         <td className="px-6 py-3.5 text-center">
                           <span className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold ${p.stockQuantity <= p.alertQuantity
                               ? 'bg-red-500/10 text-red-500 border border-red-500/20'
@@ -609,19 +600,6 @@ const Products = () => {
                     placeholder="Auto-generated if left blank"
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
                     id="product-code-input"
-                  />
-                </div>
-
-                {/* Barcode Value Input */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Barcode Value</label>
-                  <input
-                    type="text"
-                    value={formBarcodeValue}
-                    onChange={(e) => setFormBarcodeValue(e.target.value)}
-                    placeholder="e.g. scanner value (defaults to Code)"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500 font-mono"
-                    id="product-barcode-value-input"
                   />
                 </div>
 

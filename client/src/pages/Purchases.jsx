@@ -139,6 +139,7 @@ const Purchases = () => {
   // Editing purchase state
   const [editPurchaseId, setEditPurchaseId] = useState(null);
   const [purchaseNumber, setPurchaseNumber] = useState('');
+  const [showEditConfirmModal, setShowEditConfirmModal] = useState(false);
 
   // Invoice Detail Modal state
   const [selectedPurchase, setSelectedPurchase] = useState(null);
@@ -295,18 +296,13 @@ const Purchases = () => {
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setSupplierSearch('');
     setShowSupplierDropdown(false);
+    setShowEditConfirmModal(false);
     setEditPurchaseId(null);
     setPurchaseNumber('');
     setView('list');
   };
 
-  const handleSavePurchase = async (e) => {
-    e.preventDefault();
-    if ((!selectedSupplier && !supplierSearch) || !selectedWarehouse || purchaseItems.length === 0) {
-      showMsg('Please complete purchase items, warehouse and supplier', 'error');
-      return;
-    }
-
+  const submitPurchasePayload = async (shouldUpdateItems = true) => {
     const payload = {
       supplierId: selectedSupplier || supplierSearch,
       warehouseId: selectedWarehouse,
@@ -323,7 +319,8 @@ const Purchases = () => {
       amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
       paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
       date: purchaseDate,
-      purchaseNumber: purchaseNumber || undefined
+      purchaseNumber: purchaseNumber || undefined,
+      itemsUpdated: shouldUpdateItems
     };
 
     try {
@@ -336,14 +333,29 @@ const Purchases = () => {
       }
 
       if (res.data.success) {
-        showMsg(editPurchaseId ? 'Stock purchase updated successfully! Inventory updated.' : 'Stock purchased successfully! Inventory updated.');
+        showMsg(editPurchaseId ? 'Stock purchase updated successfully!' : 'Stock purchased successfully! Inventory updated.');
         await fetchPurchasesData();
+        setShowEditConfirmModal(false);
         resetForm();
       }
     } catch (err) {
       showMsg(err.response?.data?.message || err.message, 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSavePurchase = (e) => {
+    e.preventDefault();
+    if ((!selectedSupplier && !supplierSearch) || !selectedWarehouse || purchaseItems.length === 0) {
+      showMsg('Please complete purchase items, warehouse and supplier', 'error');
+      return;
+    }
+
+    if (editPurchaseId) {
+      setShowEditConfirmModal(true);
+    } else {
+      submitPurchasePayload(true);
     }
   };
 
@@ -2057,6 +2069,40 @@ const Purchases = () => {
           )}
         </div>
       )}
+        {/* MODAL: Edit Confirm Modal */}
+        {showEditConfirmModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6 text-center">
+              <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Confirm Purchase Update</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Do you want to synchronize the updated purchase quantities with the product inventory?
+              </p>
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={() => submitPurchasePayload(true)}
+                  className="w-full bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-xl font-bold text-sm transition-all"
+                >
+                  Yes, Update & Sync Quantities
+                </button>
+                <button
+                  onClick={() => submitPurchasePayload(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-white text-slate-700 py-3 rounded-xl font-bold text-sm transition-all"
+                >
+                  No, Update Purchase Only
+                </button>
+                <button
+                  onClick={() => setShowEditConfirmModal(false)}
+                  className="w-full text-slate-500 hover:text-slate-700 font-bold text-sm transition-all py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
   </>
 );
 };
