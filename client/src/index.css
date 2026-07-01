@@ -73,7 +73,7 @@
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
-  height: var(--sticker-height);
+  height: 100% !important;
   gap: 3px !important;
 }
 
@@ -132,9 +132,10 @@
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    height: var(--sticker-height) !important;
+    height: 100% !important;
     box-sizing: border-box !important;
     gap: 3px !important;
+    border: none !important;
   }
 
   @page {

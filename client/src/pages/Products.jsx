@@ -1348,18 +1348,16 @@ const Products = () => {
                                 key={`${itemIdx}-${copyIdx}`}
                                 className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm barcode-card"
                                 style={printStyle === 'continuous' ? {
-                                  '--sticker-height': '2.3cm',
                                   width: '3.1cm',
-                                  height: 'var(--sticker-height)',
+                                  height: '2.3cm',
                                   padding: BARCODE_STYLES[printStyle].padding,
                                   boxSizing: 'border-box',
                                   pageBreakInside: 'avoid',
                                   breakInside: 'avoid',
                                   border: '1px solid #ddd'
                                 } : {
-                                  '--sticker-height': BARCODE_STYLES[printStyle].height,
                                   width: BARCODE_STYLES[printStyle].width,
-                                  height: 'var(--sticker-height)',
+                                  height: BARCODE_STYLES[printStyle].height,
                                   padding: BARCODE_STYLES[printStyle].padding,
                                   boxSizing: 'border-box',
                                   pageBreakInside: 'avoid',
@@ -1452,11 +1450,7 @@ const Products = () => {
                       >
                         <div 
                           className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border barcode-card"
-                          style={{
-                            '--sticker-height': '100%',
-                            height: 'var(--sticker-height)',
-                            padding: BARCODE_STYLES[printStyle].padding
-                          }}
+                          style={{ padding: BARCODE_STYLES[printStyle].padding }}
                         >
                           <p 
                             className="font-semibold uppercase leading-tight text-black m-0 p-0"
@@ -1537,8 +1531,7 @@ const Products = () => {
                           key={`print-grid-${pageIdx}-${itemIdx}`}
                           className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full barcode-card"
                           style={{
-                            '--sticker-height': BARCODE_STYLES[printStyle].height,
-                            height: 'var(--sticker-height)',
+                            height: BARCODE_STYLES[printStyle].height,
                             padding: BARCODE_STYLES[printStyle].padding,
                             boxSizing: 'border-box',
                             pageBreakInside: 'avoid',
