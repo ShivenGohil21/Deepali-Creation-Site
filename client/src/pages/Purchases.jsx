@@ -694,7 +694,7 @@ const Purchases = () => {
           ) : (
             <button
               onClick={resetForm}
-              className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all"
+              className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-350 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all"
               id="purchase-list-btn"
             >
               <ArrowLeft size={16} />

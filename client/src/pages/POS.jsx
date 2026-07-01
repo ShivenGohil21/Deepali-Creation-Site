@@ -94,8 +94,19 @@ const POS = () => {
       }
       if (whRes.data.success) {
         setWarehouses(whRes.data.data);
-        if (whRes.data.data.length > 0 && !warehouseId) {
-          dispatch(setWarehouse(whRes.data.data[0]._id));
+        if (whRes.data.data.length > 0) {
+          const isValidWarehouse = warehouseId && whRes.data.data.some(w => w._id === warehouseId);
+          if (isValidWarehouse) {
+            // Already set correctly in Redux
+          } else {
+            const storedWhId = localStorage.getItem('pos_warehouse_id');
+            const isValidStored = storedWhId && whRes.data.data.some(w => w._id === storedWhId);
+            if (isValidStored) {
+              dispatch(setWarehouse(storedWhId));
+            } else {
+              dispatch(setWarehouse(whRes.data.data[0]._id));
+            }
+          }
         }
       }
     } catch (err) {
@@ -571,7 +582,7 @@ const POS = () => {
                 <input
                   type="number"
                   value={tax || ''}
-                  placeholder="10"
+                  placeholder="0"
                   onChange={(e) => dispatch(setCartTax(e.target.value))}
                   className="w-16 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center rounded py-0.5 text-xs text-slate-800 dark:text-white"
                 />

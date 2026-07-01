@@ -558,7 +558,8 @@ const Products = () => {
       color: formColor,
       description: formDescription,
       codePrefix: formPrefix,
-      barcodeValue: formBarcodeValue || undefined
+      barcodeValue: formBarcodeValue || undefined,
+      stockQuantity: formStockQty !== '' ? Number(formStockQty) : 0
     };
 
     try {
@@ -994,6 +995,18 @@ const Products = () => {
                     value={formAlertQty}
                     onChange={(e) => setFormAlertQty(e.target.value)}
                     placeholder="Low stock alert trigger level"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
+                  />
+                </div>
+
+                {/* Manual Stock Quantity */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Stock Quantity (Pcs)</label>
+                  <input
+                    type="number"
+                    value={formStockQty}
+                    onChange={(e) => setFormStockQty(e.target.value)}
+                    placeholder="Enter manual stock quantity"
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-primary-500"
                   />
                 </div>

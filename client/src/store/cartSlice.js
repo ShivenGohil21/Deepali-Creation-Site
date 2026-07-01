@@ -3,9 +3,9 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   items: [], // { _id, name, code, barcodeValue, unit, sellingPrice, tax, quantity, discount, total }
   discount: 0, // Flat cart discount
-  tax: 10,     // Global GST percentage (defaults to 10%)
+  tax: 0,     // Global GST percentage (defaults to 0%)
   customer: null,  // Selected customer object
-  warehouseId: '', // Selected warehouse ID
+  warehouseId: localStorage.getItem('pos_warehouse_id') || '', // Selected warehouse ID
 };
 
 const calculateTotals = (state) => {
@@ -78,11 +78,16 @@ const cartSlice = createSlice({
     },
     setWarehouse(state, action) {
       state.warehouseId = action.payload;
+      if (action.payload) {
+        localStorage.setItem('pos_warehouse_id', action.payload);
+      } else {
+        localStorage.removeItem('pos_warehouse_id');
+      }
     },
     clearCart(state) {
       state.items = [];
       state.discount = 0;
-      state.tax = 10;
+      state.tax = 0;
       // Note: Keep customer and warehouse to avoid re-selecting every sale
     },
     resetCartFull(state) {
