@@ -41,12 +41,13 @@ const Sales = () => {
     }
     
     // Create Excel friendly CSV
-    const headers = 'Invoice Number,Customer,Warehouse,Date,Payment Method,Subtotal (₹),Tax (%),Discount (₹),Grand Total (₹),Amount Paid (₹),Status,Items\r\n';
+    const headers = 'Product Code,Customer,Warehouse,Date,Payment Method,Subtotal (₹),Tax (%),Discount (₹),Grand Total (₹),Amount Paid (₹),Status,Items\r\n';
     const rows = itemsToExport.map(s => {
       const customerName = s.customer?.name || 'Walk-in Customer';
       const warehouseName = s.warehouse?.name || 'N/A';
       const itemsList = s.items?.map(it => `${it.productName} (x${it.quantity})`).join('; ') || 'N/A';
-      return `"${s.invoiceNumber}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${new Date(s.date).toLocaleDateString('en-GB')}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
+      const productCodes = s.items?.map(it => it.productCode).join('; ') || 'N/A';
+      return `"${productCodes}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${new Date(s.date).toLocaleDateString('en-GB')}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
     }).join('\r\n');
 
     // UTF-8 BOM to prevent Excel encoding issues
@@ -481,7 +482,7 @@ const Sales = () => {
                           className="w-4 h-4 rounded text-primary-600 border-slate-300 dark:border-slate-800 focus:ring-primary-500 cursor-pointer"
                         />
                       </th>
-                      <th className="px-6 py-3.5">Invoice Code</th>
+                      <th className="px-6 py-3.5">Product Code</th>
                       <th className="px-6 py-3.5">Customer</th>
                       <th className="px-6 py-3.5">Warehouse</th>
                       <th className="px-6 py-3.5">Products</th>
@@ -516,7 +517,9 @@ const Sales = () => {
                               className="w-4 h-4 rounded text-primary-600 border-slate-300 dark:border-slate-800 focus:ring-primary-500 cursor-pointer"
                             />
                           </td>
-                          <td className="px-6 py-3.5 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">{sale.invoiceNumber}</td>
+                          <td className="px-6 py-3.5 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200" title={sale.items?.map(it => it.productCode).join(', ')}>
+                            {sale.items?.map(it => it.productCode).join(', ') || 'N/A'}
+                          </td>
                           <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{sale.customer?.name}</td>
                           <td className="px-6 py-3.5 text-slate-400">{sale.warehouse?.name}</td>
                           <td className="px-6 py-3.5 text-slate-650 dark:text-slate-350 max-w-[200px] truncate" title={sale.items?.map(it => `${it.productName} (x${it.quantity})`).join(', ')}>
