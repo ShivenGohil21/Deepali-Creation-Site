@@ -67,6 +67,16 @@
   }
 }
 
+/* Barcode card centering in preview */
+.barcode-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: var(--sticker-height);
+  gap: 3px !important;
+}
+
 /* Barcode printable layout CSS rules */
 @media print {
   body {
@@ -111,6 +121,22 @@
     margin: 0 !important;
     padding: 0 !important;
   }
+  /* Restore flexbox for barcode cards and container during print */
+  div.barcode-card-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  div.barcode-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: var(--sticker-height) !important;
+    box-sizing: border-box !important;
+    gap: 3px !important;
+  }
+
   @page {
     size: A4 portrait;
     margin: 0mm;

@@ -1346,18 +1346,20 @@ const Products = () => {
                             Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                               <div 
                                 key={`${itemIdx}-${copyIdx}`}
-                                className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
+                                className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm barcode-card"
                                 style={printStyle === 'continuous' ? {
+                                  '--sticker-height': '2.3cm',
                                   width: '3.1cm',
-                                  height: '2.3cm',
+                                  height: 'var(--sticker-height)',
                                   padding: BARCODE_STYLES[printStyle].padding,
                                   boxSizing: 'border-box',
                                   pageBreakInside: 'avoid',
                                   breakInside: 'avoid',
                                   border: '1px solid #ddd'
                                 } : {
+                                  '--sticker-height': BARCODE_STYLES[printStyle].height,
                                   width: BARCODE_STYLES[printStyle].width,
-                                  height: BARCODE_STYLES[printStyle].height,
+                                  height: 'var(--sticker-height)',
                                   padding: BARCODE_STYLES[printStyle].padding,
                                   boxSizing: 'border-box',
                                   pageBreakInside: 'avoid',
@@ -1439,7 +1441,7 @@ const Products = () => {
                     Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                       <div 
                         key={`print-thermal-${itemIdx}-${copyIdx}`}
-                        className="flex justify-center items-center p-0.5 bg-white text-black mx-auto"
+                        className="flex justify-center items-center p-0.5 bg-white text-black mx-auto barcode-card-container"
                         style={{
                           width: '3.1cm',
                           height: '2.3cm',
@@ -1449,8 +1451,12 @@ const Products = () => {
                         }}
                       >
                         <div 
-                          className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border"
-                          style={{ padding: BARCODE_STYLES[printStyle].padding }}
+                          className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border barcode-card"
+                          style={{
+                            '--sticker-height': '100%',
+                            height: 'var(--sticker-height)',
+                            padding: BARCODE_STYLES[printStyle].padding
+                          }}
                         >
                           <p 
                             className="font-semibold uppercase leading-tight text-black m-0 p-0"
@@ -1529,9 +1535,10 @@ const Products = () => {
                       {pageItems.map((item, itemIdx) => (
                         <div 
                           key={`print-grid-${pageIdx}-${itemIdx}`}
-                          className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
+                          className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full barcode-card"
                           style={{
-                            height: BARCODE_STYLES[printStyle].height,
+                            '--sticker-height': BARCODE_STYLES[printStyle].height,
+                            height: 'var(--sticker-height)',
                             padding: BARCODE_STYLES[printStyle].padding,
                             boxSizing: 'border-box',
                             pageBreakInside: 'avoid',
