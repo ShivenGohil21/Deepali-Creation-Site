@@ -77,7 +77,7 @@ exports.createPurchase = async (req, res) => {
       }
       finalPurchaseNumber = `PUR-${String(nextNum).padStart(6, '0')}`;
     }
-    
+
     const purchaseNumber = finalPurchaseNumber;
 
     // Validate or create supplier
