@@ -21,6 +21,25 @@ import {
 } from 'lucide-react';
 
 const BARCODE_STYLES = {
+  // '40-a4': {
+  //   name: '40 per sheet (A4) (52.5mm x 29.7mm)',
+  //   cols: 4,
+  //   rows: 10,
+  //   width: '52.5mm',
+  //   height: '29.7mm',
+  //   marginTop: '0mm',
+  //   marginLeft: '0mm',
+  //   imgHeight: '9.5mm',
+  //   fontSizeName: '8px',
+  //   fontSizeNo: '8px',
+  //   fontSizePrice: '9px',
+  //   gap: '0mm',
+  //   padding: '1mm',
+  //   isA4: true
+  // },
+
+
+
   '40-a4': {
     name: '40 per sheet (A4) (52.5mm x 29.7mm)',
     cols: 4,
@@ -29,14 +48,16 @@ const BARCODE_STYLES = {
     height: '29.7mm',
     marginTop: '0mm',
     marginLeft: '0mm',
-    imgHeight: '9.5mm',
+    imgHeight: '9.5mm',      // Perfect height to allow vertical breathing room
     fontSizeName: '8px',
     fontSizeNo: '8px',
     fontSizePrice: '9px',
     gap: '0mm',
-    padding: '1mm',
+    padding: '0mm',
     isA4: true
   },
+
+
   '30-a4': {
     name: '30 per sheet (A4) (69.8mm x 29.7mm)',
     cols: 3,
@@ -304,7 +325,7 @@ const Products = () => {
     try {
       setBulkBarcodeLoading(true);
       const productIds = selectedProductIds;
-      
+
       const res = await API.post('/products/barcode-bulk', { productIds });
       if (res.data.success) {
         const barcodeDataMap = {};
@@ -373,14 +394,14 @@ const Products = () => {
   const handleUpdateProductPrice = async (idx) => {
     const item = bulkBarcodeItems[idx];
     if (!item || !item.product || !item.product._id) return;
-    
+
     try {
       const res = await API.put(`/products/${item.product._id}`, {
         sellingPrice: Number(item.customPrice)
       });
       if (res.data.success) {
         showToast(`Updated database selling price for "${item.productName}" to ₹${Number(item.customPrice).toFixed(2)}.`);
-        
+
         const updated = [...bulkBarcodeItems];
         updated[idx].product.sellingPrice = Number(item.customPrice);
         setBulkBarcodeItems(updated);
@@ -1168,7 +1189,7 @@ const Products = () => {
 
               {/* Config & Table area */}
               <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
-                
+
                 {/* Print Layout Selection Dropdown */}
                 <div className="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-850 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
@@ -1247,11 +1268,10 @@ const Products = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                       {bulkBarcodeItems.map((item, idx) => (
-                        <tr 
-                          key={idx} 
-                          className={`text-slate-700 dark:text-slate-350 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${
-                            !item.selected ? 'opacity-50' : ''
-                          }`}
+                        <tr
+                          key={idx}
+                          className={`text-slate-700 dark:text-slate-350 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${!item.selected ? 'opacity-50' : ''
+                            }`}
                         >
                           <td className="px-4 py-3 text-center">
                             <input
@@ -1321,7 +1341,7 @@ const Products = () => {
                     {bulkBarcodeItems.filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0)).length === 0 ? (
                       <div className="text-slate-400 text-xs py-8">Select products and set print quantities to preview.</div>
                     ) : (
-                      <div 
+                      <div
                         className="bg-white p-4 shadow-inner rounded border border-slate-300 text-black"
                         style={printStyle !== 'continuous' ? {
                           display: 'grid',
@@ -1342,9 +1362,9 @@ const Products = () => {
                       >
                         {bulkBarcodeItems
                           .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
-                          .flatMap((item, itemIdx) => 
+                          .flatMap((item, itemIdx) =>
                             Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
-                              <div 
+                              <div
                                 key={`${itemIdx}-${copyIdx}`}
                                 className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm barcode-card"
                                 style={printStyle === 'continuous' ? {
@@ -1365,28 +1385,28 @@ const Products = () => {
                                   border: '0.1mm solid #e2e8f0'
                                 }}
                               >
-                                <p 
+                                <p
                                   className="font-extrabold uppercase leading-none text-slate-900 truncate w-full"
                                   style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName, letterSpacing: '0.3px' }}
                                 >
                                   {item.shopName}
                                 </p>
-                                <p 
+                                <p
                                   className="font-bold leading-tight truncate w-full"
                                   style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
                                 >
                                   {item.productName} {item.productColor ? `(${item.productColor})` : ''}
                                 </p>
-                                <img 
-                                  src={item.barcodeImage} 
-                                  alt="Barcode" 
+                                <img
+                                  src={item.barcodeImage}
+                                  alt="Barcode"
                                   className="mx-auto object-contain max-w-[95%]"
-                                  style={{ 
+                                  style={{
                                     height: BARCODE_STYLES[printStyle].imgHeight,
                                     imageRendering: 'pixelated'
                                   }}
                                 />
-                                <div 
+                                <div
                                   className="flex items-center justify-between font-bold w-full font-mono leading-none text-slate-700 gap-2 px-1"
                                   style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                                 >
@@ -1435,9 +1455,9 @@ const Products = () => {
               <div className="space-y-4 bg-white">
                 {bulkBarcodeItems
                   .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
-                  .flatMap((item, itemIdx) => 
+                  .flatMap((item, itemIdx) =>
                     Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
-                      <div 
+                      <div
                         key={`print-thermal-${itemIdx}-${copyIdx}`}
                         className="flex justify-center items-center p-0.5 bg-white text-black mx-auto barcode-card-container"
                         style={{
@@ -1448,38 +1468,38 @@ const Products = () => {
                           breakInside: 'avoid'
                         }}
                       >
-                        <div 
+                        <div
                           className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border barcode-card"
                           style={{ padding: BARCODE_STYLES[printStyle].padding }}
                         >
-                          <p 
+                          <p
                             className="font-semibold uppercase leading-tight text-black m-0 p-0"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
                           >
                             {item.shopName}
                           </p>
-                          <p 
+                          <p
                             className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
                             style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
                           >
                             {item.productName} {item.productColor ? `(${item.productColor})` : ''}
                           </p>
-                          <p 
+                          <p
                             className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
                           >
                             PRICE {Number(item.customPrice || 0).toFixed(2)}
                           </p>
-                          <img 
-                            src={item.barcodeImage} 
-                            alt="Barcode" 
+                          <img
+                            src={item.barcodeImage}
+                            alt="Barcode"
                             className="object-contain max-w-[95%] mx-auto"
-                            style={{ 
+                            style={{
                               height: BARCODE_STYLES[printStyle].imgHeight,
                               imageRendering: 'pixelated'
                             }}
                           />
-                          <p 
+                          <p
                             className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                           >
@@ -1497,17 +1517,17 @@ const Products = () => {
                   const itemsPerPage = parseInt(printStyle.split('-')[0], 10);
                   const allItems = bulkBarcodeItems
                     .filter(item => item.selected && (Math.max(0, Math.floor(Number(item.quantity) || 0)) > 0))
-                    .flatMap((item) => 
+                    .flatMap((item) =>
                       Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).fill(item)
                     );
-                  
+
                   const pages = [];
                   for (let i = 0; i < allItems.length; i += itemsPerPage) {
                     pages.push(allItems.slice(i, i + itemsPerPage));
                   }
 
                   return pages.map((pageItems, pageIdx) => (
-                    <div 
+                    <div
                       key={`page-${pageIdx}`}
                       className="bg-white text-black mx-auto"
                       style={{
@@ -1527,7 +1547,7 @@ const Products = () => {
                       }}
                     >
                       {pageItems.map((item, itemIdx) => (
-                        <div 
+                        <div
                           key={`print-grid-${pageIdx}-${itemIdx}`}
                           className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full barcode-card"
                           style={{
@@ -1539,34 +1559,34 @@ const Products = () => {
                             border: BARCODE_STYLES[printStyle].isA4 ? '0.1mm solid #f1f5f9' : '1px solid #ddd'
                           }}
                         >
-                          <p 
+                          <p
                             className="font-semibold uppercase leading-tight text-black m-0 p-0"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeName }}
                           >
                             {item.shopName}
                           </p>
-                          <p 
+                          <p
                             className="font-bold uppercase leading-tight truncate max-w-full text-black m-0 p-0"
                             style={{ fontSize: `calc(${BARCODE_STYLES[printStyle].fontSizeName} + 1px)` }}
                           >
                             {item.productName} {item.productColor ? `(${item.productColor})` : ''}
                           </p>
-                          <p 
+                          <p
                             className="font-bold leading-tight text-black m-0 p-0 mb-0.5"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizePrice }}
                           >
                             PRICE {Number(item.customPrice || 0).toFixed(2)}
                           </p>
-                          <img 
-                            src={item.barcodeImage} 
-                            alt="Barcode" 
+                          <img
+                            src={item.barcodeImage}
+                            alt="Barcode"
                             className="object-contain max-w-[95%] mx-auto"
-                            style={{ 
+                            style={{
                               height: BARCODE_STYLES[printStyle].imgHeight,
                               imageRendering: 'pixelated'
                             }}
                           />
-                          <p 
+                          <p
                             className="font-extrabold tracking-widest uppercase leading-none text-black m-0 p-0 mt-0.5"
                             style={{ fontSize: BARCODE_STYLES[printStyle].fontSizeNo }}
                           >

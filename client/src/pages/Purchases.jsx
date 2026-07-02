@@ -210,6 +210,7 @@ const Purchases = () => {
   const [bulkBarcodeLoading, setBulkBarcodeLoading] = useState(false);
   const [printStyle, setPrintStyle] = useState('24-a4');
   const [tempPrintStyle, setTempPrintStyle] = useState('24-a4');
+  const [selectedPurchaseIds, setSelectedPurchaseIds] = useState([]);
 
 
 
@@ -233,6 +234,7 @@ const Purchases = () => {
   const fetchPurchasesData = async () => {
     try {
       setLoading(true);
+      setSelectedPurchaseIds([]);
       const [purRes, supRes, whRes, prodRes, retRes] = await Promise.all([
         API.get('/purchases'),
         API.get('/suppliers'),
@@ -353,6 +355,7 @@ const Purchases = () => {
     setShowEditConfirmModal(false);
     setEditPurchaseId(null);
     setPurchaseNumber('');
+    setSelectedPurchaseIds([]);
     setView('list');
   };
 
@@ -468,6 +471,88 @@ const Purchases = () => {
       }
     } catch (err) {
       showMsg(err.response?.data?.message || err.message, 'error');
+    }
+  };
+
+  const handleSelectPurchaseToggle = (id) => {
+    setSelectedPurchaseIds(prev => 
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllPurchasesToggle = () => {
+    if (purchases.length > 0 && selectedPurchaseIds.length === purchases.length) {
+      setSelectedPurchaseIds([]);
+    } else {
+      setSelectedPurchaseIds(purchases.map(p => p._id));
+    }
+  };
+
+  const handleOpenBulkBarcodeForSelected = async () => {
+    try {
+      setBulkBarcodeLoading(true);
+      const selectedPurchasesData = purchases.filter(p => selectedPurchaseIds.includes(p._id));
+      
+      const allItemsMap = {};
+      selectedPurchasesData.forEach(purchase => {
+        const validItems = purchase?.items?.filter(it => it.product && it.product._id) || [];
+        validItems.forEach(it => {
+          const prod = it.product;
+          const prodId = prod._id;
+          if (!allItemsMap[prodId]) {
+            allItemsMap[prodId] = {
+              product: prod,
+              purchaseQuantity: 0,
+              quantity: 0
+            };
+          }
+          allItemsMap[prodId].purchaseQuantity += (it.quantity || 0);
+          allItemsMap[prodId].quantity += (it.quantity || 0);
+        });
+      });
+
+      const combinedItems = Object.values(allItemsMap);
+      if (combinedItems.length === 0) {
+        showMsg('No valid products found in selected purchases to print barcodes for.', 'error');
+        return;
+      }
+
+      const productIds = combinedItems.map(item => item.product._id);
+      const res = await API.post('/products/barcode-bulk', { productIds });
+      if (res.data.success) {
+        const barcodeDataMap = {};
+        res.data.data.forEach(item => {
+          barcodeDataMap[item.productId] = item;
+        });
+
+        const initialBarcodeItems = combinedItems.map(item => {
+          const prod = item.product;
+          const barcodeInfo = barcodeDataMap[prod._id] || {};
+          const currentStock = prod.stockQuantity !== undefined ? prod.stockQuantity : 0;
+          return {
+            product: prod,
+            purchaseQuantity: item.purchaseQuantity,
+            currentStock: currentStock,
+            quantity: item.quantity,
+            customPrice: Number(prod.sellingPrice || 0),
+            selected: true,
+            barcodeImage: barcodeInfo.barcodeImage || '',
+            productName: prod.code ? `${prod.name} - ${isNaN(parseInt(prod.code, 10)) ? prod.code : parseInt(prod.code, 10)}` : prod.name,
+            productColor: prod.color || '',
+            barcodeValue: prod.barcodeValue || prod.code,
+            shopName: barcodeInfo.shopName || 'Deepali Creation'
+          };
+        });
+
+        setBulkBarcodeItems(initialBarcodeItems);
+        setPrintStyle('24-a4');
+        setTempPrintStyle('24-a4');
+        setShowBulkBarcodeModal(true);
+      }
+    } catch (err) {
+      showMsg(err.response?.data?.message || err.message, 'error');
+    } finally {
+      setBulkBarcodeLoading(false);
     }
   };
 
@@ -683,14 +768,26 @@ const Purchases = () => {
         </div>
         <div>
           {view === 'list' ? (
-            <button
-              onClick={() => setView('new')}
-              className="flex items-center space-x-1.5 bg-primary-600 hover:bg-primary-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-95"
-              id="new-purchase-btn"
-            >
-              <Plus size={16} />
-              <span>New Stock Purchase</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {selectedPurchaseIds.length > 0 && (
+                <button
+                  onClick={handleOpenBulkBarcodeForSelected}
+                  className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-95"
+                  id="bulk-print-barcodes-btn"
+                >
+                  <Barcode size={16} />
+                  <span>Print Barcodes ({selectedPurchaseIds.length})</span>
+                </button>
+              )}
+              <button
+                onClick={() => setView('new')}
+                className="flex items-center space-x-1.5 bg-primary-600 hover:bg-primary-500 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-95"
+                id="new-purchase-btn"
+              >
+                <Plus size={16} />
+                <span>New Stock Purchase</span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={resetForm}
@@ -737,6 +834,14 @@ const Purchases = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold text-xs">
+                      <th className="px-4 py-3.5 text-center w-12">
+                        <input
+                          type="checkbox"
+                          checked={purchases.length > 0 && selectedPurchaseIds.length === purchases.length}
+                          onChange={handleSelectAllPurchasesToggle}
+                          className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-6 py-3.5">Purchase Number</th>
                       <th className="px-6 py-3.5">Supplier</th>
                       <th className="px-6 py-3.5">Dest Warehouse</th>
@@ -749,20 +854,28 @@ const Purchases = () => {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 text-xs">
                     {loading ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-12">
+                        <td colSpan="8" className="text-center py-12">
                           <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                           <span>Loading purchase invoices...</span>
                         </td>
                       </tr>
                     ) : purchases.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-12 text-slate-400">
+                        <td colSpan="8" className="text-center py-12 text-slate-400">
                           No purchase bills recorded. Click "New Stock Purchase" to create one.
                         </td>
                       </tr>
                     ) : (
                       purchases.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="px-4 py-3.5 text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedPurchaseIds.includes(p._id)}
+                              onChange={() => handleSelectPurchaseToggle(p._id)}
+                              className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                            />
+                          </td>
                           <td className="px-6 py-3.5 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">{p.purchaseNumber}</td>
                           <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{p.supplier?.name}</td>
                           <td className="px-6 py-3.5">{p.warehouse?.name}</td>
