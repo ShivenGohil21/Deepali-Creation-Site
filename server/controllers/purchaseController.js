@@ -101,6 +101,7 @@ exports.createPurchase = async (req, res) => {
     }
 
     const processedItems = [];
+    const productsToReconcile = new Set();
 
     // Process each purchase item
     for (const item of items) {
@@ -113,6 +114,8 @@ exports.createPurchase = async (req, res) => {
         console.warn(`[Create Purchase] Product not found: ${productId}`);
         return res.status(400).json({ success: false, message: `Product not found in database: ${productId}. It may have been deleted.` });
       }
+
+      productsToReconcile.add(product._id.toString());
 
       // Check or create stock index in product warehouseStock
       const stockIndex = product.warehouseStock.findIndex(
@@ -134,7 +137,6 @@ exports.createPurchase = async (req, res) => {
       product.costPrice = cost;
       product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
       await product.save();
-      await reconcileStocks.reconcileProductStock(product._id);
 
       // Log Inventory inward movement
       const log = new InventoryLog({
@@ -184,6 +186,10 @@ exports.createPurchase = async (req, res) => {
     });
 
     await purchase.save();
+
+    for (const prodId of productsToReconcile) {
+      await reconcileStocks.reconcileProductStock(prodId);
+    }
 
     // Trigger Notification for Purchase
     const purchaseNotif = new Notification({
@@ -462,8 +468,10 @@ exports.updatePurchase = async (req, res) => {
 
     await purchase.save();
 
-    for (const prodId of productsToReconcile) {
-      await reconcileStocks.reconcileProductStock(prodId);
+    if (shouldUpdateItems) {
+      for (const prodId of productsToReconcile) {
+        await reconcileStocks.reconcileProductStock(prodId);
+      }
     }
 
     await logAction(

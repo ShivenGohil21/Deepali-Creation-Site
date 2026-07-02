@@ -101,9 +101,16 @@ const reconcileStocks = async () => {
       }
 
       if (isChanged) {
-        product.warehouseStock = newWarehouseStock;
-        product.stockQuantity = totalStock;
-        await product.save();
+        await Product.updateOne(
+          { _id: product._id },
+          {
+            $set: {
+              warehouseStock: newWarehouseStock,
+              stockQuantity: totalStock,
+              updatedAt: Date.now()
+            }
+          }
+        );
         correctedCount++;
         console.log(`[Stock Reconciliation] Corrected ${product.code} (${product.name}) stock level to: ${totalStock} Pcs`);
       }
@@ -190,9 +197,16 @@ const reconcileProductStock = async (productId) => {
       totalStock += finalQty;
     }
 
-    product.warehouseStock = newWarehouseStock;
-    product.stockQuantity = totalStock;
-    await product.save();
+    await Product.updateOne(
+      { _id: productId },
+      {
+        $set: {
+          warehouseStock: newWarehouseStock,
+          stockQuantity: totalStock,
+          updatedAt: Date.now()
+        }
+      }
+    );
     console.log(`[Stock Reconciliation] Reconciled stock for product ${product.code} (${product.name}) to ${totalStock}`);
   } catch (error) {
     console.error(`[Stock Reconciliation] Error reconciling product ${productId}:`, error);
