@@ -21,25 +21,6 @@ import {
 } from 'lucide-react';
 
 const BARCODE_STYLES = {
-  // '40-a4': {
-  //   name: '40 per sheet (A4) (52.5mm x 29.7mm)',
-  //   cols: 4,
-  //   rows: 10,
-  //   width: '52.5mm',
-  //   height: '29.7mm',
-  //   marginTop: '0mm',
-  //   marginLeft: '0mm',
-  //   imgHeight: '9.5mm',
-  //   fontSizeName: '8px',
-  //   fontSizeNo: '8px',
-  //   fontSizePrice: '9px',
-  //   gap: '0mm',
-  //   padding: '1mm',
-  //   isA4: true
-  // },
-
-
-
   '40-a4': {
     name: '40 per sheet (A4) (52.5mm x 29.7mm)',
     cols: 4,
@@ -48,15 +29,14 @@ const BARCODE_STYLES = {
     height: '29.7mm',
     marginTop: '0mm',
     marginLeft: '0mm',
-    imgHeight: '9.5mm',      // Perfect height to allow vertical breathing room
+    imgHeight: '9.5mm',
     fontSizeName: '8px',
     fontSizeNo: '8px',
     fontSizePrice: '9px',
     gap: '0mm',
-    padding: '0mm',
+    padding: '1mm',
     isA4: true
   },
-
 
   '30-a4': {
     name: '30 per sheet (A4) (69.8mm x 29.7mm)',
@@ -1366,7 +1346,7 @@ const Products = () => {
                             Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                               <div
                                 key={`${itemIdx}-${copyIdx}`}
-                                className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm barcode-card"
+                                className="text-center bg-white text-black flex flex-col justify-center items-center shadow-sm barcode-card"
                                 style={printStyle === 'continuous' ? {
                                   width: '3.1cm',
                                   height: '2.3cm',
@@ -1469,7 +1449,7 @@ const Products = () => {
                         }}
                       >
                         <div
-                          className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border barcode-card"
+                          className="border border-black text-center bg-white text-black flex flex-col justify-center items-center rounded-sm w-full h-full box-border barcode-card"
                           style={{ padding: BARCODE_STYLES[printStyle].padding }}
                         >
                           <p
@@ -1549,7 +1529,7 @@ const Products = () => {
                       {pageItems.map((item, itemIdx) => (
                         <div
                           key={`print-grid-${pageIdx}-${itemIdx}`}
-                          className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full barcode-card"
+                          className="text-center bg-white text-black flex flex-col justify-center items-center rounded-sm box-border w-full barcode-card"
                           style={{
                             height: BARCODE_STYLES[printStyle].height,
                             padding: BARCODE_STYLES[printStyle].padding,

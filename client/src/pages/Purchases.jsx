@@ -2021,7 +2021,7 @@ const Purchases = () => {
                           Array.from({ length: Math.max(0, Math.floor(Number(item.quantity) || 0)) }).map((_, copyIdx) => (
                             <div 
                               key={`${itemIdx}-${copyIdx}`}
-                              className="text-center bg-white text-black flex flex-col justify-between items-center shadow-sm"
+                              className="text-center bg-white text-black flex flex-col justify-center items-center shadow-sm barcode-card"
                               style={printStyle === 'continuous' ? {
                                 width: '3.1cm',
                                 height: '2.3cm',
@@ -2124,7 +2124,7 @@ const Purchases = () => {
                       }}
                     >
                       <div 
-                        className="border border-black text-center bg-white text-black flex flex-col justify-between items-center rounded-sm w-full h-full box-border"
+                        className="border border-black text-center bg-white text-black flex flex-col justify-center items-center rounded-sm w-full h-full box-border barcode-card"
                         style={{ padding: BARCODE_STYLES[printStyle].padding }}
                       >
                         <p 
@@ -2204,7 +2204,7 @@ const Purchases = () => {
                     {pageItems.map((item, itemIdx) => (
                       <div 
                         key={`print-grid-${pageIdx}-${itemIdx}`}
-                        className="text-center bg-white text-black flex flex-col justify-between items-center rounded-sm box-border w-full"
+                        className="text-center bg-white text-black flex flex-col justify-center items-center rounded-sm box-border w-full barcode-card"
                         style={{
                           height: BARCODE_STYLES[printStyle].height,
                           padding: BARCODE_STYLES[printStyle].padding,
