@@ -4,7 +4,8 @@ const {
   getAdjustments,
   getAdjustmentById,
   createAdjustment,
-  getAdjustmentBarcodeImage
+  getAdjustmentBarcodeImage,
+  deleteAdjustment
 } = require('../controllers/adjustmentController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -13,7 +14,8 @@ router.route('/')
   .post(protect, authorize('Super Admin', 'Admin', 'Warehouse Staff', 'Manager'), createAdjustment);
 
 router.route('/:id')
-  .get(protect, getAdjustmentById);
+  .get(protect, getAdjustmentById)
+  .delete(protect, authorize('Super Admin', 'Admin', 'Manager'), deleteAdjustment);
 
 router.route('/barcode/:id')
   .get(protect, getAdjustmentBarcodeImage);

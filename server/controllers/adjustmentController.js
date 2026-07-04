@@ -256,3 +256,104 @@ exports.getAdjustmentBarcodeImage = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Delete stock adjustment
+// @route   DELETE /api/adjustments/:id
+// @access  Private
+exports.deleteAdjustment = async (req, res) => {
+  try {
+    const adjustment = await Adjustment.findById(req.params.id);
+    if (!adjustment) {
+      return res.status(404).json({ success: false, message: 'Adjustment not found' });
+    }
+
+    const warehouseId = adjustment.warehouse;
+
+    // 1. First pass: Validate that deleting this adjustment won't result in negative stock
+    for (const item of adjustment.items) {
+      if (item.type === 'Addition') {
+        const product = await Product.findById(item.product);
+        if (product) {
+          const stockIndex = product.warehouseStock.findIndex(
+            (s) => s.warehouse.toString() === warehouseId.toString()
+          );
+          const currentStock = stockIndex !== -1 ? product.warehouseStock[stockIndex].quantity : 0;
+          if (currentStock < item.quantity) {
+            return res.status(400).json({
+              success: false,
+              message: `Cannot delete adjustment: Reverting addition for product "${product.name}" would result in negative stock. Available: ${currentStock}`
+            });
+          }
+        }
+      }
+    }
+
+    const reconcileStocks = require('../utils/stockReconciler');
+
+    // 2. Delete the adjustment first so that reconciliation queries do not find it
+    await Adjustment.deleteOne({ _id: req.params.id });
+
+    // 3. Second pass: Revert stock quantities, log inventory changes, and save products
+    for (const item of adjustment.items) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        const stockIndex = product.warehouseStock.findIndex(
+          (s) => s.warehouse.toString() === warehouseId.toString()
+        );
+
+        let prevStock = 0;
+        let newStock = 0;
+        const qtyChange = item.type === 'Addition' ? -item.quantity : item.quantity;
+
+        if (stockIndex !== -1) {
+          prevStock = product.warehouseStock[stockIndex].quantity;
+          product.warehouseStock[stockIndex].quantity += qtyChange;
+          // Guard against negative just in case
+          if (product.warehouseStock[stockIndex].quantity < 0) {
+            product.warehouseStock[stockIndex].quantity = 0;
+          }
+          newStock = product.warehouseStock[stockIndex].quantity;
+        } else {
+          // If the product wasn't found in this warehouse's stock (e.g. for Subtraction reverting)
+          if (qtyChange > 0) {
+            product.warehouseStock.push({ warehouse: warehouseId, quantity: qtyChange });
+            newStock = qtyChange;
+          }
+        }
+
+        product.stockQuantity = product.warehouseStock.reduce((acc, curr) => acc + curr.quantity, 0);
+        await product.save();
+
+        // Log in InventoryLog
+        const inventoryLog = new InventoryLog({
+          product: product._id,
+          warehouse: warehouseId,
+          type: 'Adjustment',
+          quantity: qtyChange,
+          previousStock: prevStock,
+          newStock: newStock,
+          referenceId: adjustment.referenceNo,
+          notes: `Adjustment Deleted Reversal: ${adjustment.referenceNo}`,
+          createdBy: req.user ? req.user.id : null
+        });
+        await inventoryLog.save();
+
+        // Reconcile stock for this product to be 100% sure the totals match
+        await reconcileStocks.reconcileProductStock(product._id);
+      }
+    }
+
+    // 4. Log audit action
+    await logAction(
+      req.user ? req.user.id : null,
+      req.user ? req.user.username : 'Admin',
+      'Delete Stock Adjustment',
+      `Adjustment ${adjustment.referenceNo}`,
+      `Deleted stock adjustment: ${adjustment.referenceNo}`
+    );
+
+    res.status(200).json({ success: true, message: 'Stock adjustment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

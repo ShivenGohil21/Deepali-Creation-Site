@@ -59,13 +59,14 @@ const reconcileStocks = async () => {
       const adjustments = await Adjustment.find({ 'items.product': product._id });
       for (const adj of adjustments) {
         const whId = adj.warehouse.toString();
-        const item = adj.items.find(it => it.product.toString() === product._id.toString());
-        if (item) {
-          const adjQty = Number(item.quantity || 0);
-          if (adj.type === 'Addition') {
-            warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + adjQty;
-          } else if (adj.type === 'Deduction') {
-            warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - adjQty;
+        for (const item of adj.items) {
+          if (item.product.toString() === product._id.toString()) {
+            const adjQty = Number(item.quantity || 0);
+            if (item.type === 'Addition') {
+              warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + adjQty;
+            } else if (item.type === 'Subtraction') {
+              warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - adjQty;
+            }
           }
         }
       }
@@ -173,13 +174,14 @@ const reconcileProductStock = async (productId) => {
     const adjustments = await Adjustment.find({ 'items.product': productId });
     for (const adj of adjustments) {
       const whId = adj.warehouse.toString();
-      const item = adj.items.find(it => it.product.toString() === productId.toString());
-      if (item) {
-        const adjQty = Number(item.quantity || 0);
-        if (adj.type === 'Addition') {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + adjQty;
-        } else if (adj.type === 'Deduction') {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - adjQty;
+      for (const item of adj.items) {
+        if (item.product.toString() === productId.toString()) {
+          const adjQty = Number(item.quantity || 0);
+          if (item.type === 'Addition') {
+            warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + adjQty;
+          } else if (item.type === 'Subtraction') {
+            warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - adjQty;
+          }
         }
       }
     }

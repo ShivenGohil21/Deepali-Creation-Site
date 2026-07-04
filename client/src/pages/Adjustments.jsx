@@ -187,6 +187,26 @@ const Adjustments = () => {
     window.print();
   };
 
+  const handleDeleteAdjustment = async (id, refNo) => {
+    if (window.confirm(`Are you sure you want to delete the stock adjustment ${refNo}? This will revert the stock quantities changed by this adjustment.`)) {
+      try {
+        const res = await API.delete(`/adjustments/${id}`);
+        if (res.data.success) {
+          showToast('Adjustment deleted successfully.');
+          // Refresh list
+          const listRes = await API.get('/adjustments');
+          if (listRes.data.success) setAdjustments(listRes.data.data);
+          // Also refresh products to get latest warehouse stock counts
+          const prodRes = await API.get('/products');
+          if (prodRes.data.success) setAllProducts(prodRes.data.data);
+        }
+      } catch (err) {
+        const errMsg = err.response?.data?.message || err.message;
+        showToast(errMsg, 'error');
+      }
+    }
+  };
+
   // Search product filters
   const filteredProducts = productSearch.trim()
     ? allProducts.filter(p => 
@@ -300,7 +320,7 @@ const Adjustments = () => {
                     <td className="px-6 py-3.5 text-right font-bold text-slate-800 dark:text-slate-100">
                       ₹{adj.totalAmount.toFixed(2)}
                     </td>
-                    <td className="px-6 py-3.5 text-right">
+                    <td className="px-6 py-3.5 text-right flex items-center justify-end space-x-1">
                       <button
                         onClick={() => handleOpenDetail(adj._id)}
                         disabled={detailLoading}
@@ -313,6 +333,14 @@ const Adjustments = () => {
                         ) : (
                           <Eye size={15} />
                         )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAdjustment(adj._id, adj.referenceNo)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                        title="Delete Adjustment"
+                        id={`delete-adjustment-${adj.referenceNo.replace(/\//g, '-')}`}
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>

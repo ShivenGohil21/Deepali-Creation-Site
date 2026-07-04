@@ -147,10 +147,11 @@ const POS = () => {
   // Process barcode input scan or name search
   const handleBarcodeScanSubmit = async (e) => {
     e.preventDefault();
-    if (!scanCode.trim()) return;
+    const targetValue = scanInputRef.current ? scanInputRef.current.value : scanCode;
+    if (!targetValue.trim()) return;
 
     try {
-      const rawVal = scanCode.trim().toLowerCase();
+      const rawVal = targetValue.trim().toLowerCase();
 
       // Auto-normalize code formatting, e.g. Comp Code
       const normalizedVal = (() => {
@@ -165,7 +166,12 @@ const POS = () => {
         return rawVal;
       })();
 
-      setScanCode(''); // Clear quickly for next scan
+      // Clear quickly for next scan
+      setScanCode('');
+      if (scanInputRef.current) {
+        scanInputRef.current.value = '';
+      }
+      setShowScannerDropdown(false);
 
       // 1. Search in local products list first (exact code, barcode, or name)
       let prod = productsList.find(p =>
@@ -193,7 +199,7 @@ const POS = () => {
       }
 
       // 4. Fallback to API scan if not found in local list (e.g. newly created products)
-      const res = await API.get(`/products/scan/${scanCode.trim()}`);
+      const res = await API.get(`/products/scan/${targetValue.trim()}`);
       if (res.data.success) {
         handleGridAdd(res.data.data);
       } else {
