@@ -5,6 +5,7 @@ import axios from 'axios';
 import API from '../utils/api';
 import { loginStart, loginSuccess, loginFailure, clearError } from '../store/authSlice';
 import { ShoppingBag, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import LogoImg from '../assets/logo.png';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -52,11 +53,13 @@ const Login = () => {
       <div className="w-full max-w-md bg-slate-800/80 border border-slate-700/50 backdrop-blur-xl rounded-3xl shadow-2xl p-8 space-y-8 z-10 transition-all">
 
         {/* Brand Logo & Header */}
-        <div className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl shadow-lg shadow-primary-700/20 hover:rotate-6 transition-transform">
-            DC
-          </div>
-          <h2 className="text-3xl font-bold tracking-tight text-white font-sans">
+        <div className="text-center space-y-4">
+          <img 
+            src={LogoImg} 
+            alt="Deepali Creation Logo" 
+            className="mx-auto max-h-24 w-auto object-contain rounded-2xl shadow-lg border border-slate-700/30 hover:scale-[1.03] transition-all duration-300"
+          />
+          <h2 className="text-2xl font-bold tracking-tight text-white font-sans">
             Deepali Creation
           </h2>
         </div>

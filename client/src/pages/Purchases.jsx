@@ -189,6 +189,23 @@ const Purchases = () => {
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
 
+  // Payments List state
+  const [paymentsList, setPaymentsList] = useState([]); // [{ amount, method, date, transactionId, notes }]
+  
+  // Add Payment Modal/Form state
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [paymentAmountInput, setPaymentAmountInput] = useState('');
+  const [paymentMethodInput, setPaymentMethodInput] = useState('Cash');
+  const [paymentDateInput, setPaymentDateInput] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+
+  const displayPaymentStatus = (status) => {
+    if (status === 'Paid') return 'Fully Paid';
+    if (status === 'Partial') return 'Partially Paid';
+    return 'Unpaid';
+  };
+
   // Editing purchase state
   const [editPurchaseId, setEditPurchaseId] = useState(null);
   const [purchaseNumber, setPurchaseNumber] = useState('');
@@ -343,6 +360,14 @@ const Purchases = () => {
   const taxAmount = taxableAmount * (Number(gstRate || 0) / 100);
   const grandTotal = Math.max(0, taxableAmount + taxAmount);
 
+  const totalPaidAmount = paymentStatus === 'Paid' 
+    ? grandTotal 
+    : paymentStatus === 'Unpaid' 
+      ? 0 
+      : paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  const remainingBalance = Math.max(0, grandTotal - totalPaidAmount);
+
   const resetForm = () => {
     setPurchaseItems([]);
     setDiscount(0);
@@ -356,10 +381,21 @@ const Purchases = () => {
     setEditPurchaseId(null);
     setPurchaseNumber('');
     setSelectedPurchaseIds([]);
+    setPaymentsList([]);
+    setPaymentAmountInput('');
+    setPaymentMethodInput('Cash');
+    setPaymentDateInput(new Date().toISOString().split('T')[0]);
+    setPaymentTransactionId('');
+    setPaymentNotes('');
+    setPaymentStatus('Paid');
     setView('list');
   };
 
   const submitPurchasePayload = async (shouldUpdateItems = true) => {
+    const finalPaymentsList = paymentStatus === 'Paid' 
+      ? (paymentsList.length > 0 ? paymentsList : [{ amount: grandTotal, method: 'Cash', date: paymentDate, notes: 'Full payment recorded' }])
+      : paymentStatus === 'Unpaid' ? [] : paymentsList;
+
     const payload = {
       supplierId: selectedSupplier || supplierSearch,
       warehouseId: selectedWarehouse,
@@ -373,8 +409,9 @@ const Purchases = () => {
       tax: taxAmount,
       grandTotal,
       paymentStatus,
-      amountPaid: paymentStatus === 'Paid' ? grandTotal : Number(amountPaid || 0),
+      amountPaid: totalPaidAmount,
       paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
+      payments: finalPaymentsList,
       date: purchaseDate,
       purchaseNumber: purchaseNumber || undefined,
       itemsUpdated: shouldUpdateItems
@@ -445,7 +482,69 @@ const Purchases = () => {
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
+    setPaymentsList(p.payments || []);
     setView('new');
+  };
+
+  const handleAddPayment = () => {
+    const amount = Number(paymentAmountInput);
+    if (isNaN(amount) || amount <= 0) {
+      showMsg('Payment amount must be greater than ₹0.', 'error');
+      return;
+    }
+
+    if (amount > remainingBalance) {
+      showMsg(`Payment amount (₹${amount.toFixed(2)}) cannot exceed the remaining balance (₹${remainingBalance.toFixed(2)}).`, 'error');
+      return;
+    }
+
+    if (new Date(paymentDateInput) < new Date(purchaseDate)) {
+      showMsg(`Payment date cannot be before the Purchase Date (${new Date(purchaseDate).toLocaleDateString()}).`, 'error');
+      return;
+    }
+
+    if (paymentTransactionId.trim()) {
+      const isDuplicate = paymentsList.some(
+        p => p.transactionId && p.transactionId.trim().toLowerCase() === paymentTransactionId.trim().toLowerCase()
+      );
+      if (isDuplicate) {
+        showMsg(`Transaction ID "${paymentTransactionId}" has already been used in this purchase.`, 'error');
+        return;
+      }
+    }
+
+    const newPayment = {
+      amount,
+      method: paymentMethodInput,
+      date: paymentDateInput,
+      transactionId: paymentTransactionId.trim() || undefined,
+      notes: paymentNotes.trim() || undefined,
+      recordedBy: 'Admin'
+    };
+
+    const updatedPayments = [...paymentsList, newPayment];
+    setPaymentsList(updatedPayments);
+
+    const newTotalPaid = updatedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    setPaymentAmountInput('');
+    setPaymentMethodInput('Cash');
+    setPaymentDateInput(new Date().toISOString().split('T')[0]);
+    setPaymentTransactionId('');
+    setPaymentNotes('');
+    setShowAddPaymentModal(false);
+
+    showMsg('Payment added to history.');
+
+    if (Math.abs(grandTotal - newTotalPaid) < 0.01) {
+      setPaymentStatus('Paid');
+    }
+  };
+
+  const handleRemovePayment = (index) => {
+    const updated = paymentsList.filter((_, i) => i !== index);
+    setPaymentsList(updated);
+    showMsg('Payment removed.');
   };
 
   const handleDeletePurchase = async (id) => {
@@ -888,7 +987,7 @@ const Purchases = () => {
                                   ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
                                   : 'bg-red-500/10 text-red-500 border border-red-500/20'
                             }`}>
-                              {p.paymentStatus}
+                              {displayPaymentStatus(p.paymentStatus)}
                             </span>
                           </td>
                           <td className="px-6 py-3.5 text-right font-bold text-slate-850 dark:text-slate-100">
@@ -1389,30 +1488,22 @@ const Purchases = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Status</span>
                 <select
                   value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
+                  onChange={(e) => {
+                    const status = e.target.value;
+                    setPaymentStatus(status);
+                    if (status === 'Unpaid') {
+                      setPaymentsList([]);
+                    }
+                  }}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 >
                   <option value="Paid">Fully Paid</option>
                   <option value="Partial">Partially Paid</option>
-                  <option value="Unpaid">Unpaid (Credit Ledger)</option>
+                  <option value="Unpaid">Unpaid</option>
                 </select>
               </div>
 
-              {paymentStatus === 'Partial' && (
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Amount Paid (₹)</span>
-                  <input
-                    type="number"
-                    required
-                    placeholder="Enter paid amount"
-                    value={amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
-                  />
-                </div>
-              )}
-
-              {paymentStatus !== 'Unpaid' && (
+              {paymentStatus === 'Paid' && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Date</span>
                   <input
@@ -1422,6 +1513,64 @@ const Purchases = () => {
                     onChange={(e) => setPaymentDate(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                   />
+                </div>
+              )}
+
+              {paymentStatus === 'Partial' && (
+                <div className="space-y-2.5 border-t dark:border-slate-850 pt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment History</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (grandTotal <= 0) {
+                          showMsg('Please add products to the purchase list first.', 'error');
+                          return;
+                        }
+                        if (remainingBalance <= 0) {
+                          showMsg('Remaining Balance is ₹0. Fully paid.', 'error');
+                          return;
+                        }
+                        setPaymentAmountInput(remainingBalance.toFixed(2));
+                        setPaymentDateInput(new Date().toISOString().split('T')[0]);
+                        setPaymentTransactionId('');
+                        setPaymentNotes('');
+                        setShowAddPaymentModal(true);
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded-lg text-[9px] active:scale-95 transition-all flex items-center"
+                    >
+                      <span>+ Add Payment</span>
+                    </button>
+                  </div>
+
+                  {paymentsList.length === 0 ? (
+                    <div className="text-center py-4 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl text-slate-400 text-[10px] border border-dashed dark:border-slate-800">
+                      No payments recorded yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                      {paymentsList.map((pay, pIdx) => (
+                        <div key={pIdx} className="bg-slate-50 dark:bg-slate-950/40 border dark:border-slate-850 rounded-xl p-2 relative text-[10px] space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePayment(pIdx)}
+                            className="absolute top-1.5 right-1.5 text-slate-455 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                          <div className="flex justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span>#{pIdx + 1} - {pay.method}</span>
+                            <span className="text-emerald-500 font-extrabold">₹{Number(pay.amount).toFixed(2)}</span>
+                          </div>
+                          <div className="text-[9px] text-slate-400 flex flex-col">
+                            <span>Date: {new Date(pay.date).toLocaleDateString()}</span>
+                            {pay.transactionId && <span>Txn ID: {pay.transactionId}</span>}
+                            {pay.notes && <span className="italic truncate" title={pay.notes}>Notes: {pay.notes}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1453,6 +1602,23 @@ const Purchases = () => {
                   <span>Grand Total:</span>
                   <span className="text-primary-600 dark:text-primary-400">₹{grandTotal.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between border-t dark:border-slate-850 pt-1 text-[11px]">
+                  <span className="text-slate-450">Total Paid:</span>
+                  <span className="text-emerald-500 font-bold">₹{totalPaidAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-450">Remaining Balance:</span>
+                  <span className={`font-bold ${remainingBalance > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-500'}`}>
+                    ₹{remainingBalance.toFixed(2)}
+                  </span>
+                </div>
+                {remainingBalance === 0 && (
+                  <div className="flex justify-center pt-1">
+                    <span className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Paid in Full
+                    </span>
+                  </div>
+                )}
               </div>
 
               {editPurchaseId && (
@@ -1523,11 +1689,17 @@ const Purchases = () => {
               </div>
               <div>
                 <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Payment Status</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">{selectedPurchase.paymentStatus}</span>
+                <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] inline-block mt-0.5 ${
+                  selectedPurchase.paymentStatus === 'Paid' 
+                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                    : selectedPurchase.paymentStatus === 'Partial' 
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                      : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                }`}>{displayPaymentStatus(selectedPurchase.paymentStatus)}</span>
               </div>
               <div>
                 <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Amount Paid</span>
-                <span className="font-bold text-slate-850 dark:text-slate-100">₹{selectedPurchase.amountPaid?.toFixed(2) || '0.00'}</span>
+                <span className="font-extrabold text-emerald-550 dark:text-emerald-400 text-sm block mt-0.5">₹{selectedPurchase.amountPaid?.toFixed(2) || '0.00'}</span>
               </div>
               {selectedPurchase.paymentDate && (
                 <div className="col-span-2">
@@ -1540,22 +1712,53 @@ const Purchases = () => {
             {/* Items List */}
             <div className="space-y-2">
               <p className="font-bold text-[10px] uppercase text-slate-450 tracking-wider">Purchased Items</p>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 border rounded-xl bg-slate-50/20 dark:bg-slate-950/40 p-2 max-h-[220px] overflow-y-auto pr-1">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 border rounded-xl bg-slate-50/20 dark:bg-slate-950/40 p-2 max-h-[140px] overflow-y-auto pr-1">
                 {selectedPurchase.items?.map((item, idx) => (
-                  <div key={idx} className="py-2.5 flex items-center justify-between">
+                  <div key={idx} className="py-2 flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{item.product?.name || 'Deleted Product'}</p>
-                      <span className="text-[10px] text-slate-400 font-mono">Code: {item.product?.code || 'N/A'} | Barcode: {item.product?.barcodeValue || 'N/A'}</span>
+                      <p className="font-semibold text-slate-850 dark:text-slate-200">{item.product?.name || 'Deleted Product'}</p>
+                      <span className="text-[9px] text-slate-400 font-mono">Code: {item.product?.code || 'N/A'} | Barcode: {item.product?.barcodeValue || 'N/A'}</span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right text-[11px]">
                       <p className="font-bold text-slate-800 dark:text-slate-250">{item.quantity} units</p>
-                      <span className="text-[10px] text-slate-500 font-mono">₹{item.costPrice.toFixed(2)} ea</span>
+                      <span className="text-[9px] text-slate-500 font-mono">₹{item.costPrice.toFixed(2)} ea</span>
                       <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">₹{item.total.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Payments History in Detail Modal */}
+            {selectedPurchase.payments && selectedPurchase.payments.length > 0 && (
+              <div className="space-y-2">
+                <p className="font-bold text-[10px] uppercase text-slate-450 tracking-wider">Payment History</p>
+                <div className="border rounded-xl bg-slate-50/20 dark:bg-slate-950/40 p-2 max-h-[140px] overflow-y-auto pr-1">
+                  <table className="w-full text-left text-[10px] border-collapse">
+                    <thead>
+                      <tr className="border-b dark:border-slate-800 text-slate-400 font-semibold">
+                        <th className="pb-1 w-6">#</th>
+                        <th className="pb-1">Date</th>
+                        <th className="pb-1 text-center">Method</th>
+                        <th className="pb-1">Txn ID</th>
+                        <th className="pb-1 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {selectedPurchase.payments.map((pay, pIdx) => (
+                        <tr key={pIdx} className="text-slate-700 dark:text-slate-300">
+                          <td className="py-1.5 font-semibold">{pIdx + 1}</td>
+                          <td className="py-1.5 whitespace-nowrap">{new Date(pay.date).toLocaleDateString()}</td>
+                          <td className="py-1.5 text-center whitespace-nowrap">{pay.method}</td>
+                          <td className="py-1.5 font-mono text-[9px] text-slate-500 truncate max-w-[80px]" title={pay.transactionId}>{pay.transactionId || '-'}</td>
+                          <td className="py-1.5 text-right font-bold text-emerald-500">₹{pay.amount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Bill Totals summary */}
             <div className="bg-slate-50 dark:bg-slate-950/45 p-3 rounded-2xl border dark:border-slate-850 space-y-1.5">
@@ -1575,18 +1778,27 @@ const Purchases = () => {
                 <span className="text-slate-450">Discount:</span>
                 <span className="text-red-500 font-semibold">-₹{selectedPurchase.discount.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 font-bold text-slate-900 dark:text-white text-sm">
+              <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 font-bold text-slate-900 dark:text-white text-xs">
                 <span>Grand Total:</span>
                 <span className="text-primary-600 dark:text-primary-400">₹{selectedPurchase.grandTotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between border-t dark:border-slate-850 pt-1 text-slate-500">
-                <span>Amount Paid:</span>
-                <span className="font-semibold text-slate-700 dark:text-slate-350">₹{selectedPurchase.amountPaid.toFixed(2)}</span>
+              <div className="flex justify-between border-t dark:border-slate-850 pt-1.5 text-slate-500">
+                <span>Total Paid:</span>
+                <span className="font-semibold text-emerald-500">₹{selectedPurchase.amountPaid.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between font-bold text-red-600 dark:text-red-400">
-                <span>Remaining Price:</span>
-                <span>₹{(selectedPurchase.grandTotal - selectedPurchase.amountPaid).toFixed(2)}</span>
+              <div className="flex justify-between font-bold">
+                <span className="text-slate-450">Remaining Balance:</span>
+                <span className={selectedPurchase.grandTotal - selectedPurchase.amountPaid > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-500'}>
+                  ₹{(selectedPurchase.grandTotal - selectedPurchase.amountPaid).toFixed(2)}
+                </span>
               </div>
+              {selectedPurchase.grandTotal - selectedPurchase.amountPaid === 0 && (
+                <div className="flex justify-center pt-1">
+                  <span className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Paid in Full
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2290,6 +2502,110 @@ const Purchases = () => {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: Add Payment Modal */}
+        {showAddPaymentModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-sm shadow-2xl p-6 space-y-4 relative">
+              <button 
+                onClick={() => setShowAddPaymentModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition-colors"
+              >
+                <X size={18} />
+              </button>
+              
+              <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider border-b dark:border-slate-800 pb-2">Record Restock Payment</h3>
+              
+              <div className="space-y-3.5 text-xs">
+                {/* Remaining Balance Summary indicator */}
+                <div className="bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border dark:border-slate-850 flex justify-between items-center text-[10px]">
+                  <span className="text-slate-400 font-bold uppercase">Remaining Balance</span>
+                  <span className="text-red-500 font-extrabold text-xs">₹{remainingBalance.toFixed(2)}</span>
+                </div>
+
+                {/* Payment Amount */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Amount (₹) *</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter payment amount"
+                    value={paymentAmountInput}
+                    onChange={(e) => setPaymentAmountInput(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-750 dark:text-slate-200 focus:outline-none font-bold"
+                  />
+                </div>
+
+                {/* Payment Method */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Method *</span>
+                  <select
+                    value={paymentMethodInput}
+                    onChange={(e) => setPaymentMethodInput(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-755 dark:text-slate-200 focus:outline-none"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cheque">Cheque</option>
+                  </select>
+                </div>
+
+                {/* Payment Date */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Date *</span>
+                  <input
+                    type="date"
+                    value={paymentDateInput}
+                    onChange={(e) => setPaymentDateInput(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-755 dark:text-slate-200 focus:outline-none"
+                  />
+                </div>
+
+                {/* Transaction ID */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Reference / Transaction ID</span>
+                  <input
+                    type="text"
+                    placeholder="Optional details"
+                    value={paymentTransactionId}
+                    onChange={(e) => setPaymentTransactionId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-755 dark:text-slate-200 focus:outline-none font-mono"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Notes</span>
+                  <textarea
+                    placeholder="Optional remarks..."
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    rows={2}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-755 dark:text-slate-200 focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPaymentModal(false)}
+                    className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-white text-slate-655 px-4 py-2 rounded-xl text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddPayment}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold"
+                  >
+                    Save Payment
+                  </button>
+                </div>
               </div>
             </div>
           </div>

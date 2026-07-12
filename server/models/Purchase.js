@@ -65,6 +65,32 @@ const PurchaseSchema = new mongoose.Schema({
   paymentDate: {
     type: Date
   },
+  payments: [
+    {
+      amount: {
+        type: Number,
+        required: true
+      },
+      method: {
+        type: String,
+        enum: ['Cash', 'UPI', 'Bank Transfer', 'Cheque'],
+        required: true
+      },
+      date: {
+        type: Date,
+        required: true
+      },
+      transactionId: {
+        type: String
+      },
+      notes: {
+        type: String
+      },
+      recordedBy: {
+        type: String
+      }
+    }
+  ],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
