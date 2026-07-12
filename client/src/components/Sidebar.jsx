@@ -59,19 +59,23 @@ const Sidebar = () => {
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-950">
         {!sidebarCollapsed && (
           <div className="flex items-center space-x-2">
-            <span className="bg-primary-600 text-white p-1.5 rounded-lg flex items-center justify-center font-bold text-lg">
-              DC
-            </span>
-            <span className="font-extrabold text-xl tracking-wider text-white font-sans">
+            <img 
+              src="/favicon.png" 
+              alt="Logo Symbol" 
+              className="w-8 h-8 object-contain rounded-lg shadow-sm"
+            />
+            <span className="font-extrabold text-lg tracking-wider text-white font-sans">
               Deepali Creation
             </span>
           </div>
         )}
 
         {sidebarCollapsed && (
-          <span className="mx-auto bg-primary-600 text-white p-2 rounded-lg font-bold text-md">
-            DC
-          </span>
+          <img 
+            src="/favicon.png" 
+            alt="Logo Symbol" 
+            className="mx-auto w-8 h-8 object-contain rounded-lg shadow-sm"
+          />
         )}
 
         <button
