@@ -1016,7 +1016,7 @@ const Sales = () => {
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Date</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleString('en-GB')}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleDateString('en-GB')}</span>
                 </div>
                 <div>
                   <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Customer</span>
@@ -1183,7 +1183,7 @@ const Sales = () => {
             </div>
              <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
                <div>Invoice: <span className="font-bold">{selectedSale.invoiceNumber}</span></div>
-               <div>Date: {new Date(selectedSale.date).toLocaleString('en-GB')}</div>
+               <div>Date: {new Date(selectedSale.date).toLocaleDateString('en-GB')}</div>
                <div>Customer: {selectedSale.customer?.name} ({selectedSale.customer?.mobile || 'N/A'})</div>
                <div>Warehouse: {selectedSale.warehouse?.name}</div>
                {selectedSale.description && <div>Notes: {selectedSale.description}</div>}

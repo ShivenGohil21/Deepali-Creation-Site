@@ -1854,7 +1854,7 @@ const Purchases = () => {
           </div>
           <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
             <div>Bill Number: <span className="font-bold">{selectedPurchase.purchaseNumber}</span></div>
-            <div>Date: {new Date(selectedPurchase.date).toLocaleString()}</div>
+            <div>Date: {new Date(selectedPurchase.date).toLocaleDateString()}</div>
             <div>Supplier: {selectedPurchase.supplier?.name}</div>
             <div>Warehouse: {selectedPurchase.warehouse?.name}</div>
           </div>

@@ -900,7 +900,7 @@ const POS = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Date:</span>
-                  <span>{new Date(checkoutInvoice.date).toLocaleString()}</span>
+                  <span>{new Date(checkoutInvoice.date).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Client:</span>
@@ -1059,7 +1059,7 @@ const POS = () => {
             </div>
             <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
               <div>Invoice: <span className="font-bold">{checkoutInvoice.invoiceNumber}</span></div>
-              <div>Date: {new Date(checkoutInvoice.date).toLocaleString()}</div>
+              <div>Date: {new Date(checkoutInvoice.date).toLocaleDateString()}</div>
               <div>Cashier: {checkoutInvoice.createdBy?.name || 'Cashier Counter'}</div>
               <div>Customer: {checkoutInvoice.customer?.name} ({checkoutInvoice.customer?.mobile})</div>
             </div>
