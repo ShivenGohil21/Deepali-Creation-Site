@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import API from '../utils/api';
 import { Plus, Users, Search, Edit2, Trash2, Eye, X, FileText } from 'lucide-react';
+import Modal from '../components/Modal';
 
 const Suppliers = () => {
   const { user } = useSelector((state) => state.auth);
@@ -263,117 +264,101 @@ const Suppliers = () => {
       </div>
 
       {/* MODAL 1: Add/Edit Supplier */}
-      {showAddEditModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 flex items-center justify-center p-4 overflow-y-auto no-print">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 flex flex-col my-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b pb-3 dark:border-slate-800 shrink-0">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white">
-                {editingSupplier ? 'Edit Supplier Details' : 'Add Supplier Profile'}
-              </h3>
-              <button onClick={() => setShowAddEditModal(false)} className="text-slate-400 hover:text-slate-250">
-                <X size={22} />
-              </button>
+      <Modal
+        isOpen={showAddEditModal}
+        onClose={() => setShowAddEditModal(false)}
+        title={editingSupplier ? 'Edit Supplier' : 'Add Supplier'}
+        subtitle={editingSupplier ? 'Update supplier information' : 'Register a new supplier'}
+        maxWidth="max-w-lg"
+        showDefaultFooter={true}
+        cancelLabel="Cancel"
+        saveLabel="Save Supplier"
+        onSave={handleSaveSupplier}
+        saveButtonId="supplier-save-btn"
+      >
+        <form onSubmit={handleSaveSupplier} className="space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Supplier Name *</label>
+              <input
+                type="text"
+                required
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
+                placeholder="Surat Cotton Mills"
+              />
             </div>
-
-            <form onSubmit={handleSaveSupplier} className="flex-1 overflow-y-auto space-y-4 text-sm font-sans pt-4 pr-1 min-h-0">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Supplier Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="e.g. Surat Cotton Mills"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Mobile Number *</label>
-                <input
-                  type="text"
-                  required
-                  value={formMobile}
-                  onChange={(e) => setFormMobile(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="e.g. 9888877777"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">GST Number</label>
-                <input
-                  type="text"
-                  value={formGstNumber}
-                  onChange={(e) => setFormGstNumber(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="e.g. 27AAAAA1111A1Z1"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
-                <input
-                  type="email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="e.g. sales@cottonmills.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Ledger Balance (₹)</label>
-                <input
-                  type="number"
-                  value={formBalance}
-                  onChange={(e) => setFormBalance(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="Outstanding (+ we owe supplier, - they owe us)"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Address</label>
-                <input
-                  type="text"
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2.5 px-3.5 text-slate-700 dark:text-slate-250 text-sm font-semibold focus:outline-none focus:border-primary-500 shadow-sm"
-                  placeholder="Warehouse office location..."
-                />
-              </div>
-            </form>
-
-            <div className="flex items-center justify-end space-x-2 border-t pt-3 dark:border-slate-800 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowAddEditModal(false)}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveSupplier}
-                className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md active:scale-95 transition-all"
-                id="supplier-save-btn"
-              >
-                Save Supplier
-              </button>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Mobile Number *</label>
+              <input
+                type="text"
+                required
+                value={formMobile}
+                onChange={(e) => setFormMobile(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
+                placeholder="9888877777"
+              />
             </div>
           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">GST Number</label>
+              <input
+                type="text"
+                value={formGstNumber}
+                onChange={(e) => setFormGstNumber(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
+                placeholder="27AAAAA1111A1Z1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Email Address</label>
+              <input
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
+                placeholder="sales@cottonmills.com"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Ledger Balance (₹)</label>
+            <input
+              type="number"
+              value={formBalance}
+              onChange={(e) => setFormBalance(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all"
+              placeholder="Outstanding (+ we owe supplier)"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Address</label>
+            <textarea
+              value={formAddress}
+              onChange={(e) => setFormAddress(e.target.value)}
+              rows={2}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3.5 text-slate-200 text-sm placeholder:text-slate-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 transition-all resize-none"
+              placeholder="Warehouse office location..."
+            />
+          </div>
+        </form>
+      </Modal>
 
       {/* MODAL 2: Purchases History & Ledger logs */}
-      {showHistoryModal && historySupplier && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b pb-2.5 dark:border-slate-800">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Supplier Ledger Statement</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Purchases log with vendor **{historySupplier.name}**</p>
-              </div>
-              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-250">
-                <X size={20} />
-              </button>
-            </div>
-
+      <Modal
+        isOpen={showHistoryModal && !!historySupplier}
+        onClose={() => setShowHistoryModal(false)}
+        title="Supplier Ledger Statement"
+        subtitle={historySupplier ? `Purchases log with vendor ${historySupplier.name}` : ''}
+        maxWidth="max-w-2xl"
+        showDefaultFooter={true}
+        cancelLabel="Close Ledger"
+        hideCloseButton={false}
+      >
+        {historySupplier && (
+          <div className="space-y-4">
             {/* Invoices List */}
             <div className="max-h-80 overflow-y-auto space-y-3 pr-1 text-xs">
               {supplierPurchases.length === 0 ? (
@@ -384,14 +369,14 @@ const Suppliers = () => {
                 supplierPurchases.map((pur) => (
                   <div 
                     key={pur._id} 
-                    className="border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl bg-slate-50/20 dark:bg-slate-950/40 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                    className="border border-slate-700/50 p-3.5 rounded-xl bg-slate-800/50 flex items-center justify-between hover:bg-slate-800 transition"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-1.5">
-                        <span className="p-1 bg-slate-100 dark:bg-slate-800 rounded text-slate-500">
+                        <span className="p-1 bg-slate-700/50 rounded text-slate-400">
                           <FileText size={14} />
                         </span>
-                        <span className="font-bold text-slate-800 dark:text-slate-250 font-mono text-[11px]">{pur.purchaseNumber}</span>
+                        <span className="font-bold text-slate-200 font-mono text-[11px]">{pur.purchaseNumber}</span>
                       </div>
                       <p className="text-slate-400 text-[10px]">
                         Date: {new Date(pur.date).toLocaleDateString()} | Pay Status: {pur.paymentStatus}
@@ -399,7 +384,7 @@ const Suppliers = () => {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <p className="font-extrabold text-sm text-slate-800 dark:text-white">₹{pur.grandTotal.toFixed(2)}</p>
+                      <p className="font-extrabold text-sm text-white">₹{pur.grandTotal.toFixed(2)}</p>
                       <span className="text-[10px] text-slate-400">Paid: ₹{pur.amountPaid.toFixed(2)}</span>
                     </div>
                   </div>
@@ -407,24 +392,17 @@ const Suppliers = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t pt-3 dark:border-slate-800 text-xs">
-              <div className="flex items-center space-x-2 text-slate-500">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2 text-slate-400">
                 <span>We owe Supplier:</span>
-                <span className={`font-bold ${historySupplier.balance > 0 ? 'text-amber-600' : 'text-slate-700 dark:text-slate-350'}`}>
+                <span className={`font-bold ${historySupplier.balance > 0 ? 'text-amber-500' : 'text-slate-300'}`}>
                   ₹{historySupplier.balance.toFixed(2)}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowHistoryModal(false)}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
-              >
-                Close Ledger
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

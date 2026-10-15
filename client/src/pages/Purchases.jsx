@@ -353,6 +353,16 @@ const Purchases = () => {
     setPurchaseItems(updated);
   };
 
+  // Update editable product fields (name / code / barcode) directly on the
+  // purchase line. These are synced to the Product record when the bill is saved.
+  const handleUpdateItemField = (idx, field, value) => {
+    const updated = [...purchaseItems];
+    const current = updated[idx].productObj;
+    const base = current && typeof current === 'object' ? current : { _id: current };
+    updated[idx].productObj = { ...base, [field]: value };
+    setPurchaseItems(updated);
+  };
+
   // Calculate totals
   const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
   const discountAmount = Number(discount) || 0;
@@ -367,6 +377,12 @@ const Purchases = () => {
       : paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   const remainingBalance = Math.max(0, grandTotal - totalPaidAmount);
+
+  // A purchase is fully paid when it is marked Paid or the recorded payments already
+  // cover the grand total. Once fully paid, the status cannot be downgraded to
+  // Partially Paid or Unpaid while editing.
+  const isFullyPaid = paymentStatus === 'Paid' || (grandTotal > 0 && remainingBalance <= 0);
+  const isPaymentStatusLocked = isFullyPaid;
 
   const resetForm = () => {
     setPurchaseItems([]);
@@ -391,8 +407,8 @@ const Purchases = () => {
     setView('list');
   };
 
-  const submitPurchasePayload = async (shouldUpdateItems = true) => {
-    const finalPaymentsList = paymentStatus === 'Paid' 
+  const submitPurchasePayload = async () => {
+    const finalPaymentsList = paymentStatus === 'Paid'
       ? (paymentsList.length > 0 ? paymentsList : [{ amount: grandTotal, method: 'Cash', date: paymentDate, notes: 'Full payment recorded' }])
       : paymentStatus === 'Unpaid' ? [] : paymentsList;
 
@@ -402,7 +418,10 @@ const Purchases = () => {
       items: purchaseItems.map(it => ({
         productId: it.productObj?._id || it.productObj,
         costPrice: it.costPrice,
-        quantity: it.quantity
+        quantity: it.quantity,
+        name: it.productObj?.name,
+        code: it.productObj?.code,
+        barcodeValue: it.productObj?.barcodeValue
       })),
       subTotal,
       discount: discountAmount,
@@ -413,8 +432,7 @@ const Purchases = () => {
       paymentDate: paymentStatus !== 'Unpaid' ? paymentDate : null,
       payments: finalPaymentsList,
       date: purchaseDate,
-      purchaseNumber: purchaseNumber || undefined,
-      itemsUpdated: shouldUpdateItems
+      purchaseNumber: purchaseNumber || undefined
     };
 
     try {
@@ -427,12 +445,10 @@ const Purchases = () => {
       }
 
       if (res.data.success) {
-        showMsg(editPurchaseId ? 'Stock purchase updated successfully!' : 'Stock purchased successfully! Inventory updated.');
+        showMsg(editPurchaseId ? 'Purchase updated successfully! Inventory & supplier ledger synced.' : 'Stock purchased successfully! Inventory updated.');
         await fetchPurchasesData();
         setShowEditConfirmModal(false);
-        if (!editPurchaseId) {
-          resetForm();
-        }
+        resetForm();
       }
     } catch (err) {
       showMsg(err.response?.data?.message || err.message, 'error');
@@ -448,10 +464,12 @@ const Purchases = () => {
       return;
     }
 
+    // When editing an existing bill, confirm before applying the changes so the
+    // admin can review the recalculated totals.
     if (editPurchaseId) {
       setShowEditConfirmModal(true);
     } else {
-      submitPurchasePayload(true);
+      submitPurchasePayload();
     }
   };
 
@@ -471,7 +489,10 @@ const Purchases = () => {
         };
       })
     );
-    setPaymentStatus(p.paymentStatus || 'Paid');
+    const pGrandTotal = Number(p.grandTotal) || 0;
+    const pAmountPaid = Number(p.amountPaid) || 0;
+    const effectivelyPaid = pGrandTotal > 0 && pAmountPaid >= pGrandTotal;
+    setPaymentStatus(effectivelyPaid ? 'Paid' : (p.paymentStatus || 'Paid'));
     setAmountPaid(p.amountPaid || '');
     setDiscount(p.discount || 0);
     const pSubTotal = p.subTotal || 0;
@@ -483,7 +504,15 @@ const Purchases = () => {
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
     setPaymentsList(p.payments || []);
+    setShowEditConfirmModal(false);
     setView('new');
+  };
+
+  // Discard any in-progress edit and return to the purchase history list.
+  const handleCancelEdit = () => {
+    if (window.confirm('Discard all changes made to this purchase and return to the list?')) {
+      resetForm();
+    }
   };
 
   const handleAddPayment = () => {
@@ -1286,9 +1315,33 @@ const Purchases = () => {
                   ) : (
                     purchaseItems.map((item, idx) => (
                       <tr key={idx} className="text-slate-700 dark:text-slate-300">
-                        <td className="py-2.5 font-mono text-[11px]">{item.productObj?.code || 'N/A'}</td>
-                        <td className="py-2.5 font-mono text-[11px] text-slate-500">{item.productObj?.barcodeValue || '-'}</td>
-                        <td className="py-2.5 font-medium">{item.productObj?.name || 'Deleted Product'}</td>
+                        <td className="py-1 text-center">
+                          <input
+                            type="text"
+                            value={item.productObj?.code || ''}
+                            onChange={(e) => handleUpdateItemField(idx, 'code', e.target.value)}
+                            placeholder="Code"
+                            className="w-24 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-1 text-center text-[11px] font-mono focus:outline-none focus:border-primary-500"
+                          />
+                        </td>
+                        <td className="py-1 text-center">
+                          <input
+                            type="text"
+                            value={item.productObj?.barcodeValue || ''}
+                            onChange={(e) => handleUpdateItemField(idx, 'barcodeValue', e.target.value)}
+                            placeholder="Barcode"
+                            className="w-28 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-1 text-center text-[11px] font-mono focus:outline-none focus:border-primary-500"
+                          />
+                        </td>
+                        <td className="py-1 text-center">
+                          <input
+                            type="text"
+                            value={item.productObj?.name || ''}
+                            onChange={(e) => handleUpdateItemField(idx, 'name', e.target.value)}
+                            placeholder="Product name"
+                            className="w-full min-w-[140px] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-1 text-left text-xs font-medium focus:outline-none focus:border-primary-500"
+                          />
+                        </td>
                         <td className="py-1 text-center">
                           <div className="flex items-center justify-center space-x-1">
                             <span className="text-slate-450">₹</span>
@@ -1498,8 +1551,8 @@ const Purchases = () => {
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 >
                   <option value="Paid">Fully Paid</option>
-                  <option value="Partial">Partially Paid</option>
-                  <option value="Unpaid">Unpaid</option>
+                  {!isPaymentStatusLocked && <option value="Partial">Partially Paid</option>}
+                  {!isPaymentStatusLocked && <option value="Unpaid">Unpaid</option>}
                 </select>
               </div>
 
@@ -1636,6 +1689,18 @@ const Purchases = () => {
                   Return Items to Supplier
                 </button>
               )}
+
+                {editPurchaseId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={submitting}
+                    className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl text-center transition-all active:scale-95 disabled:opacity-60"
+                    id="cancel-purchase-edit-btn"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
 
                 <button
                   type="submit"
@@ -2469,38 +2534,64 @@ const Purchases = () => {
         {/* MODAL: Edit Confirm Modal */}
         {showEditConfirmModal && (
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-6 text-center relative">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-5 text-center relative">
               <button 
                 onClick={() => setShowEditConfirmModal(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               >
                 <X size={20} />
               </button>
-              <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center">
                 <AlertTriangle size={32} />
               </div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Confirm Purchase Update</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Do you want to synchronize the updated purchase quantities with the product inventory?
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Save Purchase Changes?</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5">
+                  Bill <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{purchaseNumber || 'auto'}</span> will be updated.
+                </p>
+              </div>
+
+              <div className="text-left bg-slate-50 dark:bg-slate-950/40 border dark:border-slate-850 rounded-2xl p-4 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Items</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{purchaseItems.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Grand Total</span>
+                  <span className="font-bold text-primary-600 dark:text-primary-400">₹{grandTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Amount Paid</span>
+                  <span className="font-semibold text-emerald-500">₹{totalPaidAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t dark:border-slate-800 pt-1.5">
+                  <span className="text-slate-400">Remaining Balance</span>
+                  <span className={`font-bold ${remainingBalance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                    ₹{remainingBalance.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Warehouse stock, supplier ledger balance and payment records will be
+                recalculated automatically from this bill.
               </p>
-              <div className="space-y-3 pt-2">
+
+              <div className="space-y-2.5 pt-1">
                 <button
-                  onClick={() => submitPurchasePayload(true)}
-                  className="w-full bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-xl font-bold text-sm transition-all"
+                  onClick={submitPurchasePayload}
+                  disabled={submitting}
+                  className="w-full bg-primary-600 hover:bg-primary-500 disabled:opacity-60 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center space-x-2"
                 >
-                  Yes, Update & Sync Quantities
-                </button>
-                <button
-                  onClick={() => submitPurchasePayload(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-white text-slate-700 py-3 rounded-xl font-bold text-sm transition-all"
-                >
-                  No, Update Purchase Only
+                  {submitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  <span>{submitting ? 'Saving...' : 'Confirm & Save Changes'}</span>
                 </button>
                 <button
                   onClick={() => setShowEditConfirmModal(false)}
-                  className="w-full text-slate-500 hover:text-slate-700 font-bold text-sm transition-all py-2"
+                  disabled={submitting}
+                  className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-white text-slate-700 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60"
                 >
-                  Cancel
+                  Keep Editing
                 </button>
               </div>
             </div>
