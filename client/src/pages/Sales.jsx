@@ -1005,119 +1005,91 @@ const Sales = () => {
         title="Invoice Details"
         subtitle={`Invoice #${selectedSale?.invoiceNumber || ''}`}
         maxWidth="max-w-lg"
+        showDefaultFooter={false}
+        cancelLabel="Close"
       >
         {selectedSale && (
-          <div className="space-y-5 text-xs font-sans">
+          <div className="space-y-4">
             {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3.5 border-b pb-3 dark:border-slate-800 text-slate-500">
               <div>
-                <span className="block font-bold uppercase text-[9px] tracking-wider text-slate-400">Invoice Number</span>
-                <span className="font-mono font-semibold text-slate-100 text-sm">{selectedSale.invoiceNumber}</span>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Invoice Number</span>
+                <span className="font-semibold font-mono text-slate-800 dark:text-slate-200 text-sm">{selectedSale.invoiceNumber}</span>
               </div>
               <div>
-                <span className="block font-bold uppercase text-[9px] tracking-wider text-slate-400">Sale Date</span>
-                <span className="font-semibold text-slate-200">{new Date(selectedSale.date).toLocaleDateString('en-GB')}</span>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Date</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleDateString('en-GB')}</span>
               </div>
               <div>
-                <span className="block font-bold uppercase text-[9px] tracking-wider text-slate-400">Customer</span>
-                <span className="font-bold text-white">{selectedSale.customer?.name || 'Walk-in Customer'} {selectedSale.customer?.mobile ? `(${selectedSale.customer.mobile})` : ''}</span>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Customer</span>
+                <span className="font-bold text-slate-900 dark:text-white">{selectedSale.customer?.name} ({selectedSale.customer?.mobile})</span>
               </div>
               <div>
-                <span className="block font-bold uppercase text-[9px] tracking-wider text-slate-400">Warehouse Source</span>
-                <span className="font-semibold text-slate-200">{selectedSale.warehouse?.name || 'N/A'}</span>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Warehouse Source</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSale.warehouse?.name}</span>
               </div>
             </div>
 
             {selectedSale.description && (
               <div>
-                <span className="block font-bold uppercase text-[9px] tracking-wider text-slate-400">Sale Description / Notes</span>
-                <span className="font-semibold text-slate-200">{selectedSale.description}</span>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Description / Notes</span>
+                <span className="font-semibold text-slate-850 dark:text-slate-200">{selectedSale.description}</span>
               </div>
             )}
 
             {/* Items List */}
             <div className="space-y-2">
-              <p className="font-bold text-[10px] uppercase text-slate-400 tracking-wider">Purchased Items</p>
-              <div className="divide-y divide-slate-700/60 border border-slate-700/60 rounded-xl overflow-hidden bg-slate-800/40">
+              <p className="font-bold text-[10px] uppercase text-slate-450 tracking-wider">Purchased Items</p>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 border rounded-xl overflow-hidden bg-slate-50/20 dark:bg-slate-950/40 p-2">
                 {selectedSale.items?.map((item, idx) => (
-                  <div key={idx} className="px-3 py-2.5 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-100 truncate">{item.productName || item.product?.name || 'Deleted Product'}</p>
-                      <span className="text-[10px] text-slate-400 font-mono">Code: {item.productCode || item.product?.code || 'N/A'} | Barcode: {item.productBarcodeValue || item.product?.barcodeValue || 'N/A'} | Tax: {item.tax || 0}%</span>
+                  <div key={idx} className="py-2.5 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">{item.productName || item.product?.name || 'Deleted Product'}</p>
+                      <span className="text-[10px] text-slate-400 font-mono">Code: {item.productCode || item.product?.code || 'N/A'} | Barcode: {item.productBarcodeValue || item.product?.barcodeValue || 'N/A'} | Tax: {item.tax}%</span>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-bold text-slate-200">{item.quantity} units</p>
-                      <span className="text-[10px] text-slate-400 font-mono">₹{(item.price || 0).toFixed(2)} ea</span>
-                      <p className="font-extrabold text-white mt-0.5">₹{(item.total || 0).toFixed(2)}</p>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-800 dark:text-slate-250">{item.quantity} units</p>
+                      <span className="text-[10px] text-slate-500 font-mono">₹{item.price.toFixed(2)} ea</span>
+                      <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">₹{item.total.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Bill Totals */}
-            <div className="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Subtotal:</span>
-                <span className="font-semibold text-slate-200">₹{(selectedSale.subTotal || 0).toFixed(2)}</span>
+            <div className="border-t pt-3 dark:border-slate-800 space-y-2 text-sm">
+              <div className="flex justify-between text-slate-500">
+                <span>Subtotal</span>
+                <span>₹{selectedSale.subTotal?.toFixed(2) || '0.00'}</span>
               </div>
-              {Number(selectedSale.tax) > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-slate-400">GST:</span>
-                  <span className="font-semibold text-slate-200">₹{(selectedSale.tax || 0).toFixed(2)}</span>
+              {selectedSale.tax > 0 && (
+                <div className="flex justify-between text-slate-500">
+                  <span>Tax ({selectedSale.tax}%)</span>
+                  <span>₹{((selectedSale.subTotal * selectedSale.tax) / 100).toFixed(2)}</span>
                 </div>
               )}
-              {Number(selectedSale.discount) > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Discount:</span>
-                  <span className="font-semibold text-red-400">-₹{(selectedSale.discount || 0).toFixed(2)}</span>
+              {selectedSale.discount > 0 && (
+                <div className="flex justify-between text-red-500 font-semibold">
+                  <span>Discount</span>
+                  <span>-₹{selectedSale.discount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-slate-700/60 pt-2 font-bold text-sm">
-                <span className="text-white">Grand Total:</span>
-                <span className="text-primary-400 text-base">₹{(selectedSale.grandTotal || 0).toFixed(2)}</span>
+              <div className="flex justify-between font-bold text-base text-slate-900 dark:text-white">
+                <span>Grand Total:</span>
+                <span className="text-primary-600 dark:text-primary-400">₹{selectedSale.grandTotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Total Paid:</span>
-                <span className="font-semibold text-emerald-400">₹{(selectedSale.amountPaid || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Remaining Balance:</span>
-                <span className={((selectedSale.grandTotal || 0) - (selectedSale.amountPaid || 0)) > 0 ? 'font-semibold text-red-400' : 'font-semibold text-emerald-400'}>
-                  ₹{(((selectedSale.grandTotal || 0) - (selectedSale.amountPaid || 0))).toFixed(2)}
-                </span>
-              </div>
-              {((selectedSale.grandTotal || 0) - (selectedSale.amountPaid || 0)) === 0 && (
-                <div className="flex justify-center pt-1">
-                  <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Paid in Full</span>
-                </div>
-              )}
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-700/60 pt-4">
+            <div className="flex justify-end space-x-2 border-t pt-3 dark:border-slate-800">
               <button
-                type="button"
                 onClick={() => setShowDetailModal(false)}
-                className="bg-slate-700 hover:bg-slate-600 text-slate-100 px-4 py-2 rounded-xl text-xs font-semibold transition-colors"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-650 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold"
               >
                 Close
               </button>
               <button
-                type="button"
-                onClick={() => {
-                  setShowDetailModal(false);
-                  handleOpenRefund(selectedSale);
-                }}
-                className="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors"
-              >
-                <RefreshCw size={14} />
-                <span>Return Items</span>
-              </button>
-              <button
-                type="button"
                 onClick={printReceipt}
-                className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors"
+                className="bg-primary-600 hover:bg-primary-500 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5"
                 id="invoice-print-btn"
               >
                 <Printer size={14} />
@@ -1127,6 +1099,7 @@ const Sales = () => {
           </div>
         )}
       </Modal>
+
       {/* REFUND / RETURNS MODAL */}
       {showRefundModal && selectedSale && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
@@ -1198,7 +1171,7 @@ const Sales = () => {
 
       </div>
 
-      {/* PRINT-ONLY AREA}
+      {/* PRINT-ONLY AREA: invoice detail printing */}
       {selectedSale && (
         <div className="hidden print-area">
           <div className="p-6 bg-white text-black font-mono text-[12px] max-w-[3in] mx-auto space-y-3 leading-relaxed">

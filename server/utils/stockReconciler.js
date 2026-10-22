@@ -5,6 +5,12 @@ const Sale = require('../models/Sale');
 const SaleReturn = require('../models/SaleReturn');
 const Adjustment = require('../models/Adjustment');
 
+const getProductQuantity = (items, productId) => items.reduce((total, item) => (
+  item.product.toString() === productId.toString()
+    ? total + Number(item.quantity || 0)
+    : total
+), 0);
+
 const reconcileStocks = async () => {
   try {
     console.log('[Stock Reconciliation] Auditing and correcting inventory stock levels...');
@@ -19,40 +25,32 @@ const reconcileStocks = async () => {
       const purchases = await Purchase.find({ 'items.product': product._id });
       for (const pur of purchases) {
         const whId = pur.warehouse.toString();
-        const item = pur.items.find(it => it.product.toString() === product._id.toString());
-        if (item) {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
-        }
+        const quantity = getProductQuantity(pur.items, product._id);
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + quantity;
       }
 
       // 2. Purchase Returns (subtracts stock)
       const purReturns = await PurchaseReturn.find({ 'items.product': product._id });
       for (const ret of purReturns) {
         const whId = ret.warehouse.toString();
-        const item = ret.items.find(it => it.product.toString() === product._id.toString());
-        if (item) {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
-        }
+        const quantity = getProductQuantity(ret.items, product._id);
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - quantity;
       }
 
       // 3. POS Sales (subtracts stock)
       const sales = await Sale.find({ 'items.product': product._id });
       for (const sale of sales) {
         const whId = sale.warehouse.toString();
-        const item = sale.items.find(it => it.product.toString() === product._id.toString());
-        if (item) {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
-        }
+        const quantity = getProductQuantity(sale.items, product._id);
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - quantity;
       }
 
       // 4. Sale Returns (adds stock)
       const saleReturns = await SaleReturn.find({ 'items.product': product._id });
       for (const ret of saleReturns) {
         const whId = ret.warehouse.toString();
-        const item = ret.items.find(it => it.product.toString() === product._id.toString());
-        if (item) {
-          warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
-        }
+        const quantity = getProductQuantity(ret.items, product._id);
+        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + quantity;
       }
 
       // 5. Stock Adjustments (adds/subtracts stock)
@@ -134,40 +132,32 @@ const reconcileProductStock = async (productId) => {
     const purchases = await Purchase.find({ 'items.product': productId });
     for (const pur of purchases) {
       const whId = pur.warehouse.toString();
-      const item = pur.items.find(it => it.product.toString() === productId.toString());
-      if (item) {
-        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
-      }
+      const quantity = getProductQuantity(pur.items, productId);
+      warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + quantity;
     }
 
     // 2. Purchase Returns (subtracts stock)
     const purReturns = await PurchaseReturn.find({ 'items.product': productId });
     for (const ret of purReturns) {
       const whId = ret.warehouse.toString();
-      const item = ret.items.find(it => it.product.toString() === productId.toString());
-      if (item) {
-        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
-      }
+      const quantity = getProductQuantity(ret.items, productId);
+      warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - quantity;
     }
 
     // 3. POS Sales (subtracts stock)
     const sales = await Sale.find({ 'items.product': productId });
     for (const sale of sales) {
       const whId = sale.warehouse.toString();
-      const item = sale.items.find(it => it.product.toString() === productId.toString());
-      if (item) {
-        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - Number(item.quantity || 0);
-      }
+      const quantity = getProductQuantity(sale.items, productId);
+      warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) - quantity;
     }
 
     // 4. Sale Returns (adds stock)
     const saleReturns = await SaleReturn.find({ 'items.product': productId });
     for (const ret of saleReturns) {
       const whId = ret.warehouse.toString();
-      const item = ret.items.find(it => it.product.toString() === productId.toString());
-      if (item) {
-        warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + Number(item.quantity || 0);
-      }
+      const quantity = getProductQuantity(ret.items, productId);
+      warehouseStockMap[whId] = (warehouseStockMap[whId] || 0) + quantity;
     }
 
     // 5. Stock Adjustments (adds/subtracts stock)
