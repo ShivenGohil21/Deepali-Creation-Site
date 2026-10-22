@@ -9,6 +9,18 @@ const QRCode = require('qrcode');
 const xlsx = require('xlsx');
 const { logAction } = require('../utils/auditLogger');
 
+const getTotalStock = (product) => {
+  const warehouseStock = product.warehouseStock || [];
+  if (warehouseStock.length === 0) {
+    return Math.max(0, Number(product.stockQuantity) || 0);
+  }
+
+  return warehouseStock.reduce(
+    (total, stock) => total + Math.max(0, Number(stock.quantity) || 0),
+    0
+  );
+};
+
 // Helper: Generate next sequential product code
 const generateNextCode = async (prefix) => {
   const cleanPrefix = prefix ? prefix.toUpperCase().trim() : 'D';
@@ -125,10 +137,15 @@ exports.getProducts = async (req, res) => {
       .populate('brand', 'name')
       .sort({ barcodeValue: 1 });
 
+    const productsWithCurrentStock = products.map((product) => ({
+      ...product.toObject(),
+      stockQuantity: getTotalStock(product)
+    }));
+
     res.status(200).json({
       success: true,
-      count: products.length,
-      data: products
+      count: productsWithCurrentStock.length,
+      data: productsWithCurrentStock
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -440,46 +457,63 @@ exports.updateProduct = async (req, res) => {
       product.initialStock = Number(initialStock);
     }
 
-    // Manual Stock Update Handling
-    if (stockQuantity !== undefined && Number(stockQuantity) !== product.stockQuantity) {
-      const oldStock = product.stockQuantity;
+    // Manual stock updates change the product total while preserving warehouse-level quantities.
+    if (stockQuantity !== undefined) {
       const newStock = Number(stockQuantity);
-      const diff = newStock - oldStock;
-      
-      product.stockQuantity = newStock;
-      
-      let targetWarehouseId = null;
-      if (newStock === 0) {
-        if (product.warehouseStock && product.warehouseStock.length > 0) {
-          product.warehouseStock.forEach(s => {
-            s.quantity = 0;
-          });
-          targetWarehouseId = product.warehouseStock[0].warehouse;
-        }
-      } else {
-        if (product.warehouseStock && product.warehouseStock.length > 0) {
-          product.warehouseStock[0].quantity = Math.max(0, product.warehouseStock[0].quantity + diff);
-          targetWarehouseId = product.warehouseStock[0].warehouse;
-        } else {
+      if (!Number.isFinite(newStock) || newStock < 0) {
+        return res.status(400).json({ success: false, message: 'Stock quantity must be a non-negative number' });
+      }
+
+      const oldStock = getTotalStock(product);
+      let remainingChange = Math.abs(newStock - oldStock);
+      const stockLogs = [];
+
+      if (newStock > oldStock) {
+        let targetStock = product.warehouseStock.find(stock => stock.warehouse);
+        if (!targetStock) {
           const defaultWh = await Warehouse.findOne();
-          if (defaultWh) {
-            product.warehouseStock = [{
-              warehouse: defaultWh._id,
-              quantity: newStock
-            }];
-            targetWarehouseId = defaultWh._id;
+          if (!defaultWh) {
+            return res.status(400).json({ success: false, message: 'Create a warehouse before adding product stock' });
           }
+          product.warehouseStock.push({ warehouse: defaultWh._id, quantity: 0 });
+          targetStock = product.warehouseStock[product.warehouseStock.length - 1];
+        }
+
+        const previousStock = Number(targetStock.quantity) || 0;
+        targetStock.quantity = previousStock + remainingChange;
+        stockLogs.push({
+          warehouse: targetStock.warehouse,
+          type: 'Stock In',
+          quantity: remainingChange,
+          previousStock,
+          newStock: targetStock.quantity
+        });
+      } else if (newStock < oldStock) {
+        for (const stock of product.warehouseStock) {
+          const previousStock = Math.max(0, Number(stock.quantity) || 0);
+          const removedStock = Math.min(previousStock, remainingChange);
+          if (removedStock === 0) continue;
+
+          stock.quantity = previousStock - removedStock;
+          remainingChange -= removedStock;
+          stockLogs.push({
+            warehouse: stock.warehouse,
+            type: 'Stock Out',
+            quantity: removedStock,
+            previousStock,
+            newStock: stock.quantity
+          });
+
+          if (remainingChange === 0) break;
         }
       }
-      
-      if (targetWarehouseId) {
+
+      product.stockQuantity = getTotalStock(product);
+
+      for (const stockLog of stockLogs) {
         const log = new InventoryLog({
           product: product._id,
-          warehouse: targetWarehouseId,
-          type: diff > 0 ? 'Stock In' : 'Stock Out',
-          quantity: Math.abs(diff),
-          previousStock: oldStock,
-          newStock: newStock,
+          ...stockLog,
           notes: 'Manual stock update via Product Edit',
           createdBy: req.user ? req.user.id : null
         });
@@ -829,6 +863,7 @@ exports.getBulkBarcodeImages = async (req, res) => {
         const base64Barcode = await getBarcodeBase64(product.barcodeValue, req.body.scale || 3, false);
         results.push({
           productId: product._id,
+          currentStock: getTotalStock(product),
           barcodeImage: base64Barcode,
           qrCodeImage: product.qrCode,
           productName: product.code ? `${product.name} - ${isNaN(parseInt(product.code, 10)) ? product.code : parseInt(product.code, 10)}` : product.name,
@@ -861,4 +896,3 @@ exports.reconcileProductStocksRoute = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

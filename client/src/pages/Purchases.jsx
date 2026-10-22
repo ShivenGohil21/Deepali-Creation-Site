@@ -179,7 +179,7 @@ const Purchases = () => {
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [purchaseItems, setPurchaseItems] = useState([]); // [{ productObj, costPrice, quantity, total }]
-  const [paymentStatus, setPaymentStatus] = useState('Paid');
+  const [paymentStatus, setPaymentStatus] = useState('Unpaid');
   const [amountPaid, setAmountPaid] = useState('');
   const [discount, setDiscount] = useState(0);
 
@@ -370,19 +370,13 @@ const Purchases = () => {
   const taxAmount = taxableAmount * (Number(gstRate || 0) / 100);
   const grandTotal = Math.max(0, taxableAmount + taxAmount);
 
-  const totalPaidAmount = paymentStatus === 'Paid' 
+  const totalPaidAmount = paymentStatus === 'Paid'
     ? grandTotal 
     : paymentStatus === 'Unpaid' 
       ? 0 
-      : paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      : Number(amountPaid) || 0;
 
   const remainingBalance = Math.max(0, grandTotal - totalPaidAmount);
-
-  // A purchase is fully paid when it is marked Paid or the recorded payments already
-  // cover the grand total. Once fully paid, the status cannot be downgraded to
-  // Partially Paid or Unpaid while editing.
-  const isFullyPaid = paymentStatus === 'Paid' || (grandTotal > 0 && remainingBalance <= 0);
-  const isPaymentStatusLocked = isFullyPaid;
 
   const resetForm = () => {
     setPurchaseItems([]);
@@ -403,14 +397,35 @@ const Purchases = () => {
     setPaymentDateInput(new Date().toISOString().split('T')[0]);
     setPaymentTransactionId('');
     setPaymentNotes('');
-    setPaymentStatus('Paid');
+    setPaymentStatus('Unpaid');
     setView('list');
   };
 
   const submitPurchasePayload = async () => {
-    const finalPaymentsList = paymentStatus === 'Paid'
-      ? (paymentsList.length > 0 ? paymentsList : [{ amount: grandTotal, method: 'Cash', date: paymentDate, notes: 'Full payment recorded' }])
-      : paymentStatus === 'Unpaid' ? [] : paymentsList;
+    const recordedPaymentsTotal = paymentsList.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    let finalPaymentsList = [];
+    if (paymentStatus !== 'Unpaid') {
+      if (Math.abs(recordedPaymentsTotal - totalPaidAmount) < 0.01) {
+        finalPaymentsList = paymentsList;
+      } else if (recordedPaymentsTotal < totalPaidAmount) {
+        finalPaymentsList = [
+          ...paymentsList,
+          {
+            amount: totalPaidAmount - recordedPaymentsTotal,
+            method: 'Cash',
+            date: paymentDate,
+            notes: 'Payment amount recorded'
+          }
+        ];
+      } else {
+        finalPaymentsList = [{
+          amount: totalPaidAmount,
+          method: 'Cash',
+          date: paymentDate,
+          notes: 'Payment amount updated'
+        }];
+      }
+    }
 
     const payload = {
       supplierId: selectedSupplier || supplierSearch,
@@ -463,6 +478,14 @@ const Purchases = () => {
       showMsg('Please complete purchase items, warehouse and supplier', 'error');
       return;
     }
+    if (paymentStatus === 'Partial' && totalPaidAmount <= 0) {
+      showMsg('Enter an amount greater than ₹0 for a partially paid purchase.', 'error');
+      return;
+    }
+    if (totalPaidAmount > grandTotal) {
+      showMsg('Amount paid cannot exceed the grand total.', 'error');
+      return;
+    }
 
     // When editing an existing bill, confirm before applying the changes so the
     // admin can review the recalculated totals.
@@ -490,10 +513,11 @@ const Purchases = () => {
       })
     );
     const pGrandTotal = Number(p.grandTotal) || 0;
-    const pAmountPaid = Number(p.amountPaid) || 0;
+    const pPayments = p.payments || [];
+    const pAmountPaid = Number(p.amountPaid) || pPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const effectivelyPaid = pGrandTotal > 0 && pAmountPaid >= pGrandTotal;
-    setPaymentStatus(effectivelyPaid ? 'Paid' : (p.paymentStatus || 'Paid'));
-    setAmountPaid(p.amountPaid || '');
+    setPaymentStatus(effectivelyPaid ? 'Paid' : (pAmountPaid > 0 ? 'Partial' : 'Unpaid'));
+    setAmountPaid(pAmountPaid || '');
     setDiscount(p.discount || 0);
     const pSubTotal = p.subTotal || 0;
     const pDiscount = p.discount || 0;
@@ -503,7 +527,7 @@ const Purchases = () => {
     setPurchaseDate(p.date ? new Date(p.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setPaymentDate(p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     setSupplierSearch(p.supplier?.name || '');
-    setPaymentsList(p.payments || []);
+    setPaymentsList(pPayments);
     setShowEditConfirmModal(false);
     setView('new');
   };
@@ -554,7 +578,9 @@ const Purchases = () => {
     const updatedPayments = [...paymentsList, newPayment];
     setPaymentsList(updatedPayments);
 
-    const newTotalPaid = updatedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const newTotalPaid = totalPaidAmount + amount;
+    setAmountPaid(newTotalPaid);
+    setPaymentDate(paymentDateInput);
 
     setPaymentAmountInput('');
     setPaymentMethodInput('Cash');
@@ -573,6 +599,9 @@ const Purchases = () => {
   const handleRemovePayment = (index) => {
     const updated = paymentsList.filter((_, i) => i !== index);
     setPaymentsList(updated);
+    const updatedTotal = updated.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    setAmountPaid(updatedTotal || '');
+    setPaymentStatus(updatedTotal >= grandTotal && grandTotal > 0 ? 'Paid' : updatedTotal > 0 ? 'Partial' : 'Unpaid');
     showMsg('Payment removed.');
   };
 
@@ -1545,18 +1574,21 @@ const Purchases = () => {
                     const status = e.target.value;
                     setPaymentStatus(status);
                     if (status === 'Unpaid') {
+                      setAmountPaid('');
                       setPaymentsList([]);
+                    } else if (status === 'Partial' && paymentStatus === 'Paid') {
+                      setAmountPaid('');
                     }
                   }}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
                 >
                   <option value="Paid">Fully Paid</option>
-                  {!isPaymentStatusLocked && <option value="Partial">Partially Paid</option>}
-                  {!isPaymentStatusLocked && <option value="Unpaid">Unpaid</option>}
+                  <option value="Partial">Partially Paid</option>
+                  <option value="Unpaid">Unpaid</option>
                 </select>
               </div>
 
-              {paymentStatus === 'Paid' && (
+              {(paymentStatus === 'Paid' || paymentStatus === 'Partial') && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Date</span>
                   <input
@@ -1569,31 +1601,55 @@ const Purchases = () => {
                 </div>
               )}
 
-              {paymentStatus === 'Partial' && (
+              {(paymentStatus === 'Partial' || paymentStatus === 'Paid') && (
                 <div className="space-y-2.5 border-t dark:border-slate-850 pt-3">
+                  {paymentStatus === 'Partial' && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Amount Paid (₹)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={grandTotal}
+                        step="0.01"
+                        required
+                        value={amountPaid}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setAmountPaid(value);
+                          if (Number(value) >= grandTotal && grandTotal > 0) {
+                            setPaymentStatus('Paid');
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-slate-700 dark:text-slate-200 focus:outline-none"
+                      />
+                      <span className="text-[10px] text-slate-400">Remaining balance: ₹{remainingBalance.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment History</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (grandTotal <= 0) {
-                          showMsg('Please add products to the purchase list first.', 'error');
-                          return;
-                        }
-                        if (remainingBalance <= 0) {
-                          showMsg('Remaining Balance is ₹0. Fully paid.', 'error');
-                          return;
-                        }
-                        setPaymentAmountInput(remainingBalance.toFixed(2));
-                        setPaymentDateInput(new Date().toISOString().split('T')[0]);
-                        setPaymentTransactionId('');
-                        setPaymentNotes('');
-                        setShowAddPaymentModal(true);
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded-lg text-[9px] active:scale-95 transition-all flex items-center"
-                    >
-                      <span>+ Add Payment</span>
-                    </button>
+                    {paymentStatus === 'Partial' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (grandTotal <= 0) {
+                            showMsg('Please add products to the purchase list first.', 'error');
+                            return;
+                          }
+                          if (remainingBalance <= 0) {
+                            showMsg('Remaining Balance is ₹0. Fully paid.', 'error');
+                            return;
+                          }
+                          setPaymentAmountInput(remainingBalance.toFixed(2));
+                          setPaymentDateInput(new Date().toISOString().split('T')[0]);
+                          setPaymentTransactionId('');
+                          setPaymentNotes('');
+                          setShowAddPaymentModal(true);
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded-lg text-[9px] active:scale-95 transition-all flex items-center"
+                      >
+                        <span>+ Add Payment</span>
+                      </button>
+                    )}
                   </div>
 
                   {paymentsList.length === 0 ? (

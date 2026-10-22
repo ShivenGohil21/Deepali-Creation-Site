@@ -94,6 +94,34 @@ exports.createPurchase = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid Purchase Form: Please ensure Supplier, Warehouse, and at least one Item are selected.' });
   }
 
+  const purchaseTotal = Number(grandTotal);
+  if (!Number.isFinite(purchaseTotal) || purchaseTotal < 0) {
+    return res.status(400).json({ success: false, message: 'Grand total is invalid.' });
+  }
+
+  const normalizedStatus = ['Paid', 'Partial', 'Unpaid'].includes(paymentStatus) ? paymentStatus : 'Unpaid';
+  const enteredAmountPaid = amountPaid === undefined || amountPaid === null || amountPaid === ''
+    ? 0
+    : Number(amountPaid);
+  const normalizedAmountPaid = normalizedStatus === 'Paid'
+    ? purchaseTotal
+    : normalizedStatus === 'Unpaid'
+      ? 0
+      : enteredAmountPaid;
+
+  if (!Number.isFinite(enteredAmountPaid) || enteredAmountPaid < 0) {
+    return res.status(400).json({ success: false, message: 'Amount paid must be a valid non-negative amount.' });
+  }
+  if (normalizedStatus === 'Partial' && normalizedAmountPaid <= 0) {
+    return res.status(400).json({ success: false, message: 'Partially paid purchases must record an amount paid greater than ₹0.' });
+  }
+  if (normalizedAmountPaid > purchaseTotal) {
+    return res.status(400).json({
+      success: false,
+      message: `Amount paid (₹${normalizedAmountPaid.toFixed(2)}) cannot exceed the grand total (₹${purchaseTotal.toFixed(2)}).`
+    });
+  }
+
   try {
     let finalPurchaseNumber = customPurchaseNumber ? customPurchaseNumber.trim() : '';
 
@@ -207,7 +235,7 @@ exports.createPurchase = async (req, res) => {
     }
 
     // 2. Adjust Supplier Balance (+ represents what we owe supplier)
-    const outstanding = Number(grandTotal) - (Number(amountPaid) || 0);
+    const outstanding = purchaseTotal - normalizedAmountPaid;
     if (outstanding > 0) {
       supplier.balance += outstanding;
       await supplier.save();
@@ -222,9 +250,9 @@ exports.createPurchase = async (req, res) => {
       subTotal: Number(subTotal),
       tax: Number(tax) || 0,
       discount: Number(discount) || 0,
-      grandTotal: Number(grandTotal),
-      paymentStatus: paymentStatus || 'Unpaid',
-      amountPaid: Number(amountPaid) || 0,
+      grandTotal: purchaseTotal,
+      paymentStatus: normalizedStatus,
+      amountPaid: normalizedAmountPaid,
       paymentDate: (req.body.paymentDate && req.body.paymentDate.toString().trim() !== '') ? new Date(req.body.paymentDate) : null,
       payments: req.body.payments || [],
       createdBy: req.user ? req.user.id : null,

@@ -248,22 +248,22 @@ const Products = () => {
   const [bulkBarcodeLoading, setBulkBarcodeLoading] = useState(false);
 
   const handleSelectProduct = (productId) => {
-    if (selectedProductIds.includes(productId)) {
-      setSelectedProductIds(selectedProductIds.filter(id => id !== productId));
-    } else {
-      setSelectedProductIds([...selectedProductIds, productId]);
-    }
+    setSelectedProductIds(prev => (
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    ));
   };
 
   const handleSelectAllProducts = (filteredProds) => {
     const allFilteredIds = filteredProds.map(p => p._id);
-    const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedProductIds.includes(id));
-    if (isAllSelected) {
-      setSelectedProductIds(selectedProductIds.filter(id => !allFilteredIds.includes(id)));
-    } else {
-      const newSelection = Array.from(new Set([...selectedProductIds, ...allFilteredIds]));
-      setSelectedProductIds(newSelection);
-    }
+    setSelectedProductIds(prev => {
+      const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => prev.includes(id));
+      if (isAllSelected) {
+        return prev.filter(id => !allFilteredIds.includes(id));
+      }
+      return Array.from(new Set([...prev, ...allFilteredIds]));
+    });
   };
 
   const exportProductsToExcel = () => {
@@ -306,38 +306,49 @@ const Products = () => {
       setBulkBarcodeLoading(true);
       const productIds = selectedProductIds;
 
-      const res = await API.post('/products/barcode-bulk', { productIds });
-      if (res.data.success) {
-        const barcodeDataMap = {};
-        res.data.data.forEach(item => {
-          barcodeDataMap[item.productId] = item;
+      const [productsRes, barcodeRes] = await Promise.all([
+        API.get('/products'),
+        API.post('/products/barcode-bulk', { productIds })
+      ]);
+      if (!productsRes.data.success || !barcodeRes.data.success) {
+        throw new Error(productsRes.data.message || barcodeRes.data.message || 'Unable to load products for barcode printing');
+      }
+
+      const currentProducts = productsRes.data.data;
+      setProducts(currentProducts);
+      const barcodeDataMap = {};
+      barcodeRes.data.data.forEach(item => {
+        barcodeDataMap[item.productId] = item;
+      });
+
+      const initialBarcodeItems = currentProducts
+        .filter(p => selectedProductIds.includes(p._id))
+        .map(prod => {
+          const barcodeInfo = barcodeDataMap[prod._id] || {};
+          const currentStock = Math.max(0, Number(prod.stockQuantity) || 0);
+          return {
+            product: prod,
+            purchaseQuantity: 0,
+            currentStock: currentStock,
+            quantity: currentStock,
+            customPrice: Number(prod.sellingPrice || 0),
+            selected: true,
+            barcodeImage: barcodeInfo.barcodeImage || '',
+            productName: prod.code ? `${prod.name} - ${isNaN(parseInt(prod.code, 10)) ? prod.code : parseInt(prod.code, 10)}` : prod.name,
+            productColor: prod.color || '',
+            barcodeValue: prod.barcodeValue || prod.code,
+            shopName: barcodeInfo.shopName || 'Deepali Creation'
+          };
         });
 
-        const initialBarcodeItems = products
-          .filter(p => selectedProductIds.includes(p._id))
-          .map(prod => {
-            const barcodeInfo = barcodeDataMap[prod._id] || {};
-            const currentStock = prod.stockQuantity !== undefined ? prod.stockQuantity : 0;
-            return {
-              product: prod,
-              purchaseQuantity: 0,
-              currentStock: currentStock,
-              quantity: currentStock > 0 ? currentStock : 1,
-              customPrice: Number(prod.sellingPrice || 0),
-              selected: true,
-              barcodeImage: barcodeInfo.barcodeImage || '',
-              productName: prod.code ? `${prod.name} - ${isNaN(parseInt(prod.code, 10)) ? prod.code : parseInt(prod.code, 10)}` : prod.name,
-              productColor: prod.color || '',
-              barcodeValue: prod.barcodeValue || prod.code,
-              shopName: barcodeInfo.shopName || 'Deepali Creation'
-            };
-          });
-
-        setBulkBarcodeItems(initialBarcodeItems);
-        setPrintStyle('24-a4');
-        setTempPrintStyle('24-a4');
-        setShowBulkBarcodeModal(true);
+      if (initialBarcodeItems.length !== productIds.length) {
+        throw new Error('Some selected products could not be loaded. Refresh the product list and try again.');
       }
+
+      setBulkBarcodeItems(initialBarcodeItems);
+      setPrintStyle('24-a4');
+      setTempPrintStyle('24-a4');
+      setShowBulkBarcodeModal(true);
     } catch (err) {
       showToast(err.response?.data?.message || err.message, 'error');
     } finally {
@@ -364,7 +375,7 @@ const Products = () => {
   };
 
   const handleBulkBarcodeSetAllToCurrentStock = () => {
-    setBulkBarcodeItems(prev => prev.map(item => ({ ...item, quantity: item.currentStock > 0 ? item.currentStock : 1 })));
+    setBulkBarcodeItems(prev => prev.map(item => ({ ...item, quantity: item.currentStock })));
   };
 
   const handleBulkBarcodeSetAllToFixedQty = (qty) => {
@@ -641,6 +652,10 @@ const Products = () => {
 
     return matchesSearch && matchesCategory && matchesBrand && matchesAlert;
   });
+  const selectedBarcodeProductCount = bulkBarcodeItems.filter(item => item.selected).length;
+  const barcodeLabelCount = bulkBarcodeItems.reduce((total, item) => (
+    total + (item.selected ? Math.max(0, Math.floor(Number(item.quantity) || 0)) : 0)
+  ), 0);
 
   return (
     <>
@@ -1204,7 +1219,9 @@ const Products = () => {
 
                 {/* Table Actions & Title */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 px-1">
-                  <span className="text-xs font-bold text-slate-500">Items List ({bulkBarcodeItems.length})</span>
+                  <span className="text-xs font-bold text-slate-500">
+                    Products selected ({selectedBarcodeProductCount} / {bulkBarcodeItems.length}) · Labels to print ({barcodeLabelCount})
+                  </span>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
