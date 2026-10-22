@@ -652,6 +652,11 @@ const Products = () => {
 
     return matchesSearch && matchesCategory && matchesBrand && matchesAlert;
   });
+  const selectedPiecesTotal = products.reduce((total, product) => (
+    selectedProductIds.includes(product._id)
+      ? total + Math.max(0, Number(product.stockQuantity) || 0)
+      : total
+  ), 0);
   const selectedBarcodeProductCount = bulkBarcodeItems.filter(item => item.selected).length;
   const barcodeLabelCount = bulkBarcodeItems.reduce((total, item) => (
     total + (item.selected ? Math.max(0, Math.floor(Number(item.quantity) || 0)) : 0)
@@ -786,6 +791,17 @@ const Products = () => {
               </span>
             </label>
           </div>
+
+          {selectedProductIds.length > 0 && (
+            <div className="flex justify-between items-center bg-primary-500/10 border border-primary-500/20 rounded-xl px-4 py-3 text-sm">
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                Selected Products: {selectedProductIds.length}
+              </span>
+              <span className="font-bold text-primary-600 dark:text-primary-400">
+                Total Selected Pieces: {selectedPiecesTotal} Pcs
+              </span>
+            </div>
+          )}
 
           {/* Catalog Table */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-sm overflow-hidden">

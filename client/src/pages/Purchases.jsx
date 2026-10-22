@@ -364,6 +364,10 @@ const Purchases = () => {
   };
 
   // Calculate totals
+  const totalSelectedPieces = purchaseItems.reduce(
+    (total, item) => total + Math.max(0, Number(item.quantity) || 0),
+    0
+  );
   const subTotal = purchaseItems.reduce((acc, curr) => acc + curr.total, 0);
   const discountAmount = Number(discount) || 0;
   const taxableAmount = Math.max(0, subTotal - discountAmount);
@@ -1690,9 +1694,9 @@ const Purchases = () => {
                   <span className="font-semibold text-slate-700 dark:text-slate-350">{purchaseItems.length} items</span>
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-500 pb-1 border-b dark:border-slate-850">
-                  <span>Total Quantity:</span>
+                  <span>Total Selected Pieces:</span>
                   <span className="font-semibold text-slate-700 dark:text-slate-350">
-                    {purchaseItems.reduce((acc, curr) => acc + Number(curr.quantity || 0), 0)} Pcs
+                    {totalSelectedPieces} Pcs
                   </span>
                 </div>
                 <div className="flex justify-between">
