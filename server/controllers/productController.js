@@ -135,10 +135,11 @@ exports.getProducts = async (req, res) => {
     const products = await Product.find(query)
       .populate('category', 'name')
       .populate('brand', 'name')
-      .sort({ barcodeValue: 1 });
+      .sort({ barcodeValue: 1 })
+      .lean();
 
     const productsWithCurrentStock = products.map((product) => ({
-      ...product.toObject(),
+      ...product,
       stockQuantity: getTotalStock(product)
     }));
 

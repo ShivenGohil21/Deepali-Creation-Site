@@ -27,116 +27,186 @@ const getDateBoundaries = () => {
 exports.getDashboardStats = async (req, res) => {
   try {
     const { startOfToday, endOfToday, startOfMonth, endOfMonth } = getDateBoundaries();
-
-    // 1. Basic Counts
-    const totalProducts = await Product.countDocuments();
-    const totalCategories = await Category.countDocuments();
-    const totalBrands = await Brand.countDocuments();
-    const totalCustomers = await Customer.countDocuments();
-    const totalSuppliers = await Supplier.countDocuments();
-
-    // 2. Sales and Profits
-    // Today's Sales
-    const todaySales = await Sale.find({ date: { $gte: startOfToday, $lte: endOfToday } })
-      .populate('items.product');
-    const todaySalesTotal = todaySales.reduce((acc, curr) => acc + curr.grandTotal, 0);
-
-    // Monthly Sales
-    const monthlySales = await Sale.find({ date: { $gte: startOfMonth, $lte: endOfMonth } })
-      .populate('items.product');
-    const monthlySalesTotal = monthlySales.reduce((acc, curr) => acc + curr.grandTotal, 0);
-
-    // Profit Calculation Helper
-    const calculateSalesProfit = (salesList) => {
-      let profit = 0;
-      salesList.forEach((sale) => {
-        sale.items.forEach((item) => {
-          if (item.product) {
-            const cost = item.product.costPrice || 0;
-            const price = item.price;
-            const discount = item.discount || 0;
-            const qty = item.quantity;
-            profit += (price - discount - cost) * qty;
-          }
-        });
-      });
-      return profit;
-    };
-
-    const todayProfit = calculateSalesProfit(todaySales);
-    const monthlyProfit = calculateSalesProfit(monthlySales);
-
-    // 3. Low stock alert list
-    const lowStockProducts = await Product.find({
-      $expr: { $lte: ['$stockQuantity', '$alertQuantity'] }
-    }).populate('category', 'name').limit(5);
-
-    // 4. Recent transactions
-    const recentSales = await Sale.find()
-      .populate('customer', 'name')
-      .sort({ date: -1 })
-      .limit(5);
-
-    const recentPurchases = await Purchase.find()
-      .populate('supplier', 'name')
-      .sort({ date: -1 })
-      .limit(5);
-
-    // 5. Audit Logs
-    const recentLogs = await AuditLog.find().sort({ date: -1 }).limit(6);
-
-    // 6. Monthly revenue and profit charts (Last 6 Months)
-    const chartData = [];
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const year = now.getFullYear();
-      const monthIndex = now.getMonth() - i;
-      
-      const firstDay = new Date(year, monthIndex, 1);
-      const lastDay = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+    const firstChartMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-      const mSales = await Sale.find({ date: { $gte: firstDay, $lte: lastDay } }).populate('items.product');
-      const mSalesTotal = mSales.reduce((acc, curr) => acc + curr.grandTotal, 0);
-      const mProfit = calculateSalesProfit(mSales);
-
-      const mPurchases = await Purchase.find({ date: { $gte: firstDay, $lte: lastDay } });
-      const mPurchasesTotal = mPurchases.reduce((acc, curr) => acc + curr.grandTotal, 0);
-
-      const monthName = firstDay.toLocaleString('default', { month: 'short' });
-
-      chartData.push({
-        month: monthName,
-        sales: parseFloat(mSalesTotal.toFixed(2)),
-        purchases: parseFloat(mPurchasesTotal.toFixed(2)),
-        profit: parseFloat(mProfit.toFixed(2))
-      });
-    }
-
-    // 7. Top Selling Products
-    const salesAggregation = await Sale.aggregate([
-      { $unwind: '$items' },
+    const dailySalesPipeline = [
+      { $match: { date: { $gte: firstChartMonth, $lte: endOfMonth } } },
+      { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
       {
-        $group: {
-          _id: '$items.product',
-          totalQuantity: { $sum: '$items.quantity' },
-          totalSales: { $sum: '$items.total' }
+        $lookup: {
+          from: Product.collection.name,
+          localField: 'items.product',
+          foreignField: '_id',
+          as: 'productData'
         }
       },
-      { $sort: { totalQuantity: -1 } },
-      { $limit: 5 }
+      {
+        $group: {
+          _id: '$_id',
+          date: { $first: '$date' },
+          grandTotal: { $first: '$grandTotal' },
+          profit: {
+            $sum: {
+              $cond: [
+                { $ifNull: ['$items.product', false] },
+                {
+                  $multiply: [
+                    {
+                      $subtract: [
+                        { $subtract: ['$items.price', { $ifNull: ['$items.discount', 0] }] },
+                        { $ifNull: [{ $arrayElemAt: ['$productData.costPrice', 0] }, 0] }
+                      ]
+                    },
+                    '$items.quantity'
+                  ]
+                },
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$date',
+              timezone: timeZone
+            }
+          },
+          sales: { $sum: '$grandTotal' },
+          profit: { $sum: '$profit' }
+        }
+      }
+    ];
+    const monthlyPurchasesPipeline = [
+      { $match: { date: { $gte: firstChartMonth, $lte: endOfMonth } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m',
+              date: '$date',
+              timezone: timeZone
+            }
+          },
+          total: { $sum: '$grandTotal' }
+        }
+      }
+    ];
+
+    const [
+      totalProducts,
+      totalCategories,
+      totalBrands,
+      totalCustomers,
+      totalSuppliers,
+      dailySales,
+      lowStockProducts,
+      recentSales,
+      recentPurchases,
+      recentLogs,
+      salesAggregation,
+      monthlyPurchases
+    ] = await Promise.all([
+      Product.countDocuments(),
+      Category.countDocuments(),
+      Brand.countDocuments(),
+      Customer.countDocuments(),
+      Supplier.countDocuments(),
+      Sale.aggregate(dailySalesPipeline),
+      Product.find({
+        $expr: { $lte: ['$stockQuantity', '$alertQuantity'] }
+      }).populate('category', 'name').limit(5),
+      Sale.find()
+        .populate('customer', 'name')
+        .sort({ date: -1 })
+        .limit(5),
+      Purchase.find()
+        .populate('supplier', 'name')
+        .sort({ date: -1 })
+        .limit(5),
+      AuditLog.find().sort({ date: -1 }).limit(6),
+      Sale.aggregate([
+        { $unwind: '$items' },
+        {
+          $group: {
+            _id: '$items.product',
+            totalQuantity: { $sum: '$items.quantity' },
+            totalSales: { $sum: '$items.total' }
+          }
+        },
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 5 }
+      ]),
+      Purchase.aggregate(monthlyPurchasesPipeline)
     ]);
 
-    const topSellingProducts = [];
-    for (const item of salesAggregation) {
-      const prod = await Product.findById(item._id).select('name code sellingPrice barcodeValue');
-      if (prod) {
-        topSellingProducts.push({
-          product: prod,
-          quantity: item.totalQuantity,
-          revenue: item.totalSales
-        });
+    const dailySalesMap = new Map(dailySales.map((day) => [day._id, day]));
+    const formatDateKey = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const todayTotals = dailySalesMap.get(formatDateKey(startOfToday)) || {};
+    const todaySalesTotal = Number(todayTotals.sales) || 0;
+    const todayProfit = Number(todayTotals.profit) || 0;
+
+    let monthlySalesTotal = 0;
+    let monthlyProfit = 0;
+    const chartData = [];
+    for (let i = 5; i >= 0; i--) {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const monthSales = { sales: 0, profit: 0 };
+
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dayData = dailySalesMap.get(formatDateKey(
+          new Date(firstDay.getFullYear(), firstDay.getMonth(), day)
+        ));
+        if (dayData) {
+          monthSales.sales += Number(dayData.sales) || 0;
+          monthSales.profit += Number(dayData.profit) || 0;
+        }
+      }
+
+      const monthName = firstDay.toLocaleString('default', { month: 'short' });
+      chartData.push({
+        month: monthName,
+        sales: parseFloat(monthSales.sales.toFixed(2)),
+        purchases: 0,
+        profit: parseFloat(monthSales.profit.toFixed(2))
+      });
+
+      if (firstDay >= startOfMonth && firstDay <= endOfMonth) {
+        monthlySalesTotal = monthSales.sales;
+        monthlyProfit = monthSales.profit;
       }
     }
+
+    const monthlyPurchaseMap = new Map(monthlyPurchases.map((month) => [month._id, month.total]));
+    chartData.forEach((month, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      month.purchases = parseFloat((Number(monthlyPurchaseMap.get(monthKey)) || 0).toFixed(2));
+    });
+
+    const topProducts = await Product.find({
+      _id: { $in: salesAggregation.map((item) => item._id).filter(Boolean) }
+    }).select('name code sellingPrice barcodeValue');
+    const topProductsById = new Map(topProducts.map((product) => [product._id.toString(), product]));
+    const topSellingProducts = salesAggregation.flatMap((item) => {
+      const product = topProductsById.get(item._id?.toString());
+      return product ? [{
+        product,
+        quantity: item.totalQuantity,
+        revenue: item.totalSales
+      }] : [];
+    });
 
     res.status(200).json({
       success: true,
