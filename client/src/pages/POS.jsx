@@ -73,7 +73,7 @@ const POS = () => {
     setTimeout(() => setToast({ text: '', type: 'success' }), 4000);
   };
 
-  const fetchPOSData = async () => {
+  const fetchPOSData = async (selectWalkinCustomer = true) => {
     try {
       const [prodRes, catRes, custRes, whRes] = await Promise.all([
         API.get('/products'),
@@ -86,10 +86,11 @@ const POS = () => {
       if (catRes.data.success) setCategories(catRes.data.data);
       if (custRes.data.success) {
         setCustomers(custRes.data.data);
-        // Default to walk-in customer
-        const walkin = custRes.data.data.find(c => c.name === 'Walk-in Customer');
-        if (walkin) {
-          dispatch(setCustomer(walkin));
+        if (selectWalkinCustomer) {
+          const walkin = custRes.data.data.find(c => c.name === 'Walk-in Customer');
+          if (walkin) {
+            dispatch(setCustomer(walkin));
+          }
         }
       }
       if (whRes.data.success) {
@@ -356,11 +357,12 @@ const POS = () => {
       if (res.data.success) {
         setCheckoutInvoice(res.data.data);
         dispatch(clearCart());
+        dispatch(setCustomer(null));
         setScanCode('');
         setSaleDescription('');
         setSaleDate(new Date().toISOString().split('T')[0]);
         // Refresh catalog quantities
-        fetchPOSData();
+        fetchPOSData(false);
         triggerToast('Sale saved successfully!');
       }
     } catch (err) {
@@ -483,6 +485,8 @@ const POS = () => {
                 onChange={(e) => {
                   const selected = customers.find(c => c._id === e.target.value);
                   if (selected) dispatch(setCustomer(selected));
+                  else dispatch(setCustomer(null));
+                  focusScanner();
                 }}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none"
                 id="pos-customer-select"
@@ -973,7 +977,7 @@ const POS = () => {
                   onClick={() => {
                     setCheckoutInvoice(null);
                     setShowCheckout(false);
-                    focusScanner();
+                    setTimeout(focusScanner, 0);
                   }}
                   className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 py-2.5 rounded-xl font-semibold text-xs"
                 >
