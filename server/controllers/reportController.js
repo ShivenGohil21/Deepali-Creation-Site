@@ -7,6 +7,7 @@ const Customer = require('../models/Customer');
 const Supplier = require('../models/Supplier');
 const Warehouse = require('../models/Warehouse');
 const AuditLog = require('../models/AuditLog');
+const INDIA_TIME_ZONE = 'Asia/Kolkata';
 
 // Helper to get date boundaries
 const getDateBoundaries = () => {
@@ -292,7 +293,12 @@ exports.getSalesReport = async (req, res) => {
   
   let dateQuery = {};
   if (startDate && endDate) {
-    dateQuery = { date: { $gte: new Date(startDate), $lte: new Date(endDate + 'T23:59:59') } };
+    dateQuery = {
+      date: {
+        $gte: new Date(`${startDate}T00:00:00+05:30`),
+        $lte: new Date(`${endDate}T23:59:59.999+05:30`)
+      }
+    };
   }
 
   try {
@@ -325,7 +331,14 @@ exports.getSalesReport = async (req, res) => {
     // Calculate Daily Profit Breakdown
     const dailyMap = {};
     sales.forEach((sale) => {
-      const dateKey = new Date(sale.date).toISOString().split('T')[0];
+      const dateKeyParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: INDIA_TIME_ZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(sale.date);
+      const dateParts = Object.fromEntries(dateKeyParts.map(({ type, value }) => [type, value]));
+      const dateKey = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
       if (!dailyMap[dateKey]) {
         dailyMap[dateKey] = { revenue: 0, cost: 0, profit: 0, count: 0 };
       }
@@ -354,7 +367,11 @@ exports.getSalesReport = async (req, res) => {
     const monthlyProductMap = {};
     sales.forEach((sale) => {
       const dateObj = new Date(sale.date);
-      const monthKey = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const monthKey = new Intl.DateTimeFormat('en-IN', {
+        timeZone: INDIA_TIME_ZONE,
+        month: 'long',
+        year: 'numeric'
+      }).format(dateObj);
       
       if (!monthlyProductMap[monthKey]) {
         monthlyProductMap[monthKey] = {};

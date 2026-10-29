@@ -4,6 +4,7 @@ const Customer = require('../models/Customer');
 const InventoryLog = require('../models/InventoryLog');
 const SaleReturn = require('../models/SaleReturn');
 const { logAction } = require('../utils/auditLogger');
+const { getSaleDateFields, getSaleTimestamp } = require('../utils/indiaDateTime');
 
 // @desc    Get all sales
 // @route   GET /api/sales
@@ -490,12 +491,9 @@ exports.updateSale = async (req, res) => {
     sale.changeReturned = Number(changeReturned) || 0;
     sale.description = description || '';
     if (date) {
-      const now = new Date(date);
-      sale.date = now;
-      sale.saleDate = now.toISOString().split('T')[0];
-      sale.saleTime = now.toTimeString().split(' ')[0].substring(0, 5);
-      sale.saleMonth = now.toLocaleString('default', { month: 'long' });
-      sale.saleYear = now.getFullYear();
+      const saleTimestamp = getSaleTimestamp(date, sale.date);
+      sale.date = saleTimestamp;
+      Object.assign(sale, getSaleDateFields(saleTimestamp));
     }
 
     await sale.save();
@@ -513,4 +511,3 @@ exports.updateSale = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

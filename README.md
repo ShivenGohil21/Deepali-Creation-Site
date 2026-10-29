@@ -7,6 +7,15 @@ A premium, full-stack POS and Inventory Management web application custom-built 
 - **Backend**: Node.js, Express, MongoDB, Mongoose, JWT authentication.
 - **Additional Utilities**: Barcode generation via `bwip-js`, multi-layout printable sticker templates, and Excel reports exports.
 
+## Deployment time configuration
+The backend fetches current India time from TimeAPI.io when a POS sale is submitted. Set this environment variable on the **backend service** (not the static frontend):
+
+```text
+TIME_API_URL=https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata
+```
+
+No API key is required. Restart or redeploy the backend after adding the variable. If the endpoint is missing or unavailable, checkout returns an error instead of saving a bill with an incorrect server-clock timestamp.
+
 ## Key Features
 1. **Sales & Billing (POS)**: Real-time checkout, barcode scanning support, tax & discount processing, receipt printout.
 2. **Product Catalog**: Barcode assignment, stock alerts, category/brand classifications, and dynamic selling price updates.

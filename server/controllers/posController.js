@@ -4,6 +4,11 @@ const Customer = require('../models/Customer');
 const InventoryLog = require('../models/InventoryLog');
 const Notification = require('../models/Notification');
 const { logAction } = require('../utils/auditLogger');
+const {
+  getCurrentIndianTimeFromApi,
+  getSaleDateFields,
+  getSaleTimestamp
+} = require('../utils/indiaDateTime');
 
 exports.createSale = async (req, res) => {
   const {
@@ -27,6 +32,10 @@ exports.createSale = async (req, res) => {
   }
 
   try {
+    const currentTime = await getCurrentIndianTimeFromApi();
+    const saleTimestamp = getSaleTimestamp(date, currentTime);
+    const { saleDate, saleTime, saleMonth, saleYear } = getSaleDateFields(saleTimestamp);
+
     // 1. Generate sequential Invoice Number by finding the highest previous number
     const lastSale = await Sale.findOne().sort({ _id: -1 });
     let nextNum = 1;
@@ -126,13 +135,6 @@ exports.createSale = async (req, res) => {
       await customer.save();
     }
 
-    // Generate date/time components for static storage
-    const now = date ? new Date(date) : new Date();
-    const saleDate = now.toISOString().split('T')[0];
-    const saleTime = now.toTimeString().split(' ')[0].substring(0, 5); // "HH:MM"
-    const saleMonth = now.toLocaleString('default', { month: 'long' });
-    const saleYear = now.getFullYear();
-
     // 3. Create Sale Document
     const sale = new Sale({
       invoiceNumber,
@@ -153,7 +155,7 @@ exports.createSale = async (req, res) => {
       saleMonth,
       saleYear,
       description: description || '',
-      date: now
+      date: saleTimestamp
     });
 
     await sale.save();
@@ -181,6 +183,6 @@ exports.createSale = async (req, res) => {
 
     res.status(201).json({ success: true, data: populatedSale });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(error.status || 500).json({ success: false, message: error.message });
   }
 };
