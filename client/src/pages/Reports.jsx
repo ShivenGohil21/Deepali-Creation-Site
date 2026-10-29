@@ -92,7 +92,7 @@ const Reports = () => {
   const exportToCSV = () => {
     if (!reportData || reportData.sales.length === 0) return;
 
-    const headers = ['Invoice Number,Customer,Warehouse,Date,Time (AM/PM),Payment Method,Subtotal,Tax %,Discount,Grand Total\n'];
+    const headers = ['Invoice Number,Customer,Warehouse,Date,Time (IST),Payment Method,Subtotal,Tax %,Discount,Grand Total\n'];
     const rows = reportData.sales.map(sale => {
       return `"${sale.invoiceNumber}","${sale.customer?.name || 'Walk-in'}","${sale.warehouse?.name}","${formatIndianDate(sale.date)}","${formatIndianTime(sale.date)}","${sale.paymentMethod}",${sale.subTotal},${sale.tax},${sale.discount},${sale.grandTotal}`;
     });
@@ -289,7 +289,7 @@ const Reports = () => {
                     <th className="px-6 py-3">Client</th>
                     <th className="px-6 py-3">Warehouse</th>
                     <th className="px-6 py-3">Date</th>
-                    <th className="px-6 py-3 border-l border-slate-200 dark:border-slate-800">Time (AM/PM)</th>
+                    <th className="px-6 py-3 border-l border-slate-200 dark:border-slate-800">Time (IST)</th>
                     <th className="px-6 py-3">Payment</th>
                     <th className="px-6 py-3 text-right">Tax Paid</th>
                     <th className="px-6 py-3 text-right">Discount</th>

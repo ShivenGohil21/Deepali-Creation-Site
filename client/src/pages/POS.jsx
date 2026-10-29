@@ -908,7 +908,7 @@ const POS = () => {
                   <span>{formatIndianDate(checkoutInvoice.date)}</span>
                 </div>
                 <div className="flex justify-between border-b pb-1 dark:border-slate-850">
-                  <span>Time (AM/PM):</span>
+                  <span>Time (IST):</span>
                   <span>{formatIndianTime(checkoutInvoice.date)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -1069,7 +1069,7 @@ const POS = () => {
             <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
               <div>Invoice: <span className="font-bold">{checkoutInvoice.invoiceNumber}</span></div>
               <div>Date: {formatIndianDate(checkoutInvoice.date)}</div>
-              <div>Time (AM/PM): {formatIndianTime(checkoutInvoice.date)}</div>
+              <div>Time (IST): {formatIndianTime(checkoutInvoice.date)}</div>
               <div>Cashier: {checkoutInvoice.createdBy?.name || 'Cashier Counter'}</div>
               <div>Customer: {checkoutInvoice.customer?.name} ({checkoutInvoice.customer?.mobile})</div>
             </div>
