@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../utils/api';
 import { ShoppingBag, Eye, RefreshCw, X, Printer, CheckCircle, AlertTriangle, Trash2, ArrowLeft, Edit, Plus, FileDown } from 'lucide-react';
 import Modal from '../components/Modal';
+import { formatIndianDate, formatIndianTime, getIndianDateInputValue } from '../utils/dateTime';
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
@@ -42,13 +43,13 @@ const Sales = () => {
     }
     
     // Create Excel friendly CSV
-    const headers = 'Product Code,Customer,Warehouse,Date,Payment Method,Subtotal (₹),Tax (%),Discount (₹),Grand Total (₹),Amount Paid (₹),Status,Items\r\n';
+    const headers = 'Product Code,Customer,Warehouse,Date,Time (AM/PM),Payment Method,Subtotal (₹),Tax (%),Discount (₹),Grand Total (₹),Amount Paid (₹),Status,Items\r\n';
     const rows = itemsToExport.map(s => {
       const customerName = s.customer?.name || 'Walk-in Customer';
       const warehouseName = s.warehouse?.name || 'N/A';
       const itemsList = s.items?.map(it => `${it.productName} (x${it.quantity})`).join('; ') || 'N/A';
       const productCodes = s.items?.map(it => it.productCode).join('; ') || 'N/A';
-      return `"${productCodes}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${new Date(s.date).toLocaleDateString('en-GB')}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
+      return `"${productCodes}","${customerName.replace(/"/g, '""')}","${warehouseName.replace(/"/g, '""')}","${formatIndianDate(s.date)}","${formatIndianTime(s.date)}","${s.paymentMethod}",${s.subTotal},${s.tax},${s.discount},${s.grandTotal},${s.amountPaid},"${s.paymentStatus}","${itemsList.replace(/"/g, '""')}"`;
     }).join('\r\n');
 
     // UTF-8 BOM to prevent Excel encoding issues
@@ -58,7 +59,7 @@ const Sales = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `deepali_creation_sales_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `deepali_creation_sales_${getIndianDateInputValue()}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -81,7 +82,7 @@ const Sales = () => {
   const [amountPaid, setAmountPaid] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [taxRate, setTaxRate] = useState(0);
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saleDate, setSaleDate] = useState(getIndianDateInputValue());
   const [saleDescription, setSaleDescription] = useState('');
 
   // Item additions inside edit view
@@ -239,7 +240,7 @@ const Sales = () => {
         setAmountPaid(sale.amountPaid || 0);
         setDiscount(sale.discount || 0);
         setTaxRate(sale.tax || 0);
-        setSaleDate(sale.date ? new Date(sale.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+        setSaleDate(sale.date ? getIndianDateInputValue(sale.date) : getIndianDateInputValue());
         setSaleDescription(sale.description || '');
         setView('edit');
       }
@@ -315,7 +316,7 @@ const Sales = () => {
     setPayCash(0);
     setPayUpi(0);
     setPayCard(0);
-    setSaleDate(new Date().toISOString().split('T')[0]);
+    setSaleDate(getIndianDateInputValue());
     setSaleDescription('');
     setEditSaleId(null);
     setView('list');
@@ -488,6 +489,7 @@ const Sales = () => {
                       <th className="px-6 py-3.5">Warehouse</th>
                       <th className="px-6 py-3.5">Products</th>
                       <th className="px-6 py-3.5">Date</th>
+                      <th className="px-6 py-3.5 border-l border-slate-200 dark:border-slate-800">Time (AM/PM)</th>
                       <th className="px-6 py-3.5">Payment Mode</th>
                       <th className="px-6 py-3.5 text-right">Bill Total</th>
                       <th className="px-6 py-3.5 text-right">Actions</th>
@@ -496,14 +498,14 @@ const Sales = () => {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 text-xs">
                     {loading ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-12">
+                        <td colSpan="10" className="text-center py-12">
                           <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                           <span>Loading sales log...</span>
                         </td>
                       </tr>
                     ) : sales.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-12 text-slate-400">
+                        <td colSpan="10" className="text-center py-12 text-slate-400">
                           No sales invoice history recorded. Check out items on the POS page.
                         </td>
                       </tr>
@@ -526,7 +528,8 @@ const Sales = () => {
                           <td className="px-6 py-3.5 text-slate-650 dark:text-slate-350 max-w-[200px] truncate" title={sale.items?.map(it => `${it.productName} (x${it.quantity})`).join(', ')}>
                             {sale.items?.map(it => `${it.productName} (x${it.quantity})`).join(', ') || 'N/A'}
                           </td>
-                          <td className="px-6 py-3.5">{new Date(sale.date).toLocaleDateString('en-GB')}</td>
+                          <td className="px-6 py-3.5">{formatIndianDate(sale.date)}</td>
+                          <td className="px-6 py-3.5 border-l border-slate-200 dark:border-slate-800 whitespace-nowrap">{formatIndianTime(sale.date)}</td>
                           <td className="px-6 py-3.5">
                             <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-semibold text-[10px] uppercase text-slate-600 dark:text-slate-400">
                               {sale.paymentMethod}
@@ -613,7 +616,7 @@ const Sales = () => {
                           <td className="px-6 py-3.5 font-mono text-[11px] text-slate-500">{r.invoiceNumber}</td>
                           <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{r.customer?.name}</td>
                           <td className="px-6 py-3.5">{r.warehouse?.name}</td>
-                          <td className="px-6 py-3.5">{new Date(r.date).toLocaleDateString('en-GB')}</td>
+                          <td className="px-6 py-3.5">{formatIndianDate(r.date)}</td>
                           <td className="px-6 py-3.5 text-right font-bold text-slate-850 dark:text-slate-100">
                             ₹{r.grandTotal.toFixed(2)}
                           </td>
@@ -1018,7 +1021,11 @@ const Sales = () => {
               </div>
               <div>
                 <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Date</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(selectedSale.date).toLocaleDateString('en-GB')}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatIndianDate(selectedSale.date)}</span>
+              </div>
+              <div>
+                <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Sale Time (AM/PM)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatIndianTime(selectedSale.date)}</span>
               </div>
               <div>
                 <span className="block font-bold uppercase text-[9px] tracking-wide text-slate-450">Customer</span>
@@ -1181,7 +1188,8 @@ const Sales = () => {
             </div>
              <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
                <div>Invoice: <span className="font-bold">{selectedSale.invoiceNumber}</span></div>
-               <div>Date: {new Date(selectedSale.date).toLocaleDateString('en-GB')}</div>
+               <div>Date: {formatIndianDate(selectedSale.date)}</div>
+               <div>Time (AM/PM): {formatIndianTime(selectedSale.date)}</div>
                <div>Customer: {selectedSale.customer?.name} ({selectedSale.customer?.mobile || 'N/A'})</div>
                <div>Warehouse: {selectedSale.warehouse?.name}</div>
                {selectedSale.description && <div>Notes: {selectedSale.description}</div>}

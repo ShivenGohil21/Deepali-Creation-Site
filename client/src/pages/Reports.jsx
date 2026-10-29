@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../utils/api';
 import { BarChart3, Calendar, FileSpreadsheet, Printer, TrendingUp, AlertTriangle } from 'lucide-react';
+import { formatIndianDate, formatIndianTime, getIndianDateInputValue } from '../utils/dateTime';
 
 const Reports = () => {
   const [startDate, setStartDate] = useState('');
@@ -58,8 +59,8 @@ const Reports = () => {
         const start = new Date();
         start.setDate(start.getDate() - 30);
         
-        const startStr = start.toISOString().split('T')[0];
-        const endStr = end.toISOString().split('T')[0];
+        const startStr = getIndianDateInputValue(start);
+        const endStr = getIndianDateInputValue(end);
         
         setStartDate(startStr);
         setEndDate(endStr);
@@ -91,9 +92,9 @@ const Reports = () => {
   const exportToCSV = () => {
     if (!reportData || reportData.sales.length === 0) return;
 
-    const headers = ['Invoice Number,Customer,Warehouse,Date,Payment Method,Subtotal,Tax %,Discount,Grand Total\n'];
+    const headers = ['Invoice Number,Customer,Warehouse,Date,Time (AM/PM),Payment Method,Subtotal,Tax %,Discount,Grand Total\n'];
     const rows = reportData.sales.map(sale => {
-      return `"${sale.invoiceNumber}","${sale.customer?.name || 'Walk-in'}","${sale.warehouse?.name}","${new Date(sale.date).toLocaleDateString()}","${sale.paymentMethod}",${sale.subTotal},${sale.tax},${sale.discount},${sale.grandTotal}`;
+      return `"${sale.invoiceNumber}","${sale.customer?.name || 'Walk-in'}","${sale.warehouse?.name}","${formatIndianDate(sale.date)}","${formatIndianTime(sale.date)}","${sale.paymentMethod}",${sale.subTotal},${sale.tax},${sale.discount},${sale.grandTotal}`;
     });
 
     const csvContent = headers.concat(rows).join('\n');
@@ -288,6 +289,7 @@ const Reports = () => {
                     <th className="px-6 py-3">Client</th>
                     <th className="px-6 py-3">Warehouse</th>
                     <th className="px-6 py-3">Date</th>
+                    <th className="px-6 py-3 border-l border-slate-200 dark:border-slate-800">Time (AM/PM)</th>
                     <th className="px-6 py-3">Payment</th>
                     <th className="px-6 py-3 text-right">Tax Paid</th>
                     <th className="px-6 py-3 text-right">Discount</th>
@@ -300,7 +302,8 @@ const Reports = () => {
                       <td className="px-6 py-3 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-250">{sale.invoiceNumber}</td>
                       <td className="px-6 py-3 font-semibold text-slate-900 dark:text-white">{sale.customer?.name}</td>
                       <td className="px-6 py-3 text-slate-450">{sale.warehouse?.name}</td>
-                      <td className="px-6 py-3">{new Date(sale.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-3">{formatIndianDate(sale.date)}</td>
+                      <td className="px-6 py-3 border-l border-slate-200 dark:border-slate-800 whitespace-nowrap">{formatIndianTime(sale.date)}</td>
                       <td className="px-6 py-3 font-semibold">{sale.paymentMethod}</td>
                       <td className="px-6 py-3 text-right">₹{((sale.subTotal * sale.tax)/100).toFixed(2)} ({sale.tax}%)</td>
                       <td className="px-6 py-3 text-right text-red-500">-₹{sale.discount.toFixed(2)}</td>
@@ -333,7 +336,7 @@ const Reports = () => {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-350">
                     {reportData.dailyStats?.map((day) => (
                       <tr key={day.date} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                        <td className="px-6 py-3 font-medium">{new Date(day.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-3 font-medium">{formatIndianDate(day.date)}</td>
                         <td className="px-6 py-3 text-center font-bold">{day.count}</td>
                         <td className="px-6 py-3 text-right">₹{day.revenue.toFixed(2)}</td>
                         <td className={`px-6 py-3 text-right font-bold ${day.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>

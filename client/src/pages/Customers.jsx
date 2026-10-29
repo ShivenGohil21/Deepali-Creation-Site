@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import API from '../utils/api';
 import { Plus, Users, Search, Edit2, Trash2, Eye, X, Receipt } from 'lucide-react';
 import Modal from '../components/Modal';
+import { formatIndianDate, formatIndianTime } from '../utils/dateTime';
 
 const Customers = () => {
   const { user } = useSelector((state) => state.auth);
@@ -366,7 +367,7 @@ const Customers = () => {
                         <span className="font-bold text-slate-200 font-mono text-[11px]">{sale.invoiceNumber}</span>
                       </div>
                       <p className="text-slate-400 text-[10px]">
-                        Date: {new Date(sale.date).toLocaleDateString()} | Pay Mode: {sale.paymentMethod}
+                        Date: {formatIndianDate(sale.date)} | {formatIndianTime(sale.date)} | Pay Mode: {sale.paymentMethod}
                       </p>
                     </div>
 

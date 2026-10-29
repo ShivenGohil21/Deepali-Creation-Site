@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import API from '../utils/api';
+import { formatIndianDate, formatIndianTime, getIndianDateInputValue } from '../utils/dateTime';
 import {
   addToCart,
   removeFromCart,
@@ -57,7 +58,7 @@ const POS = () => {
   const [amountPaid, setAmountPaid] = useState(0);
   const [changeReturned, setChangeReturned] = useState(0);
   const [checkoutInvoice, setCheckoutInvoice] = useState(null);
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saleDate, setSaleDate] = useState(getIndianDateInputValue());
   const [saleDescription, setSaleDescription] = useState('');
 
   // Inline Add Customer
@@ -360,7 +361,7 @@ const POS = () => {
         dispatch(setCustomer(null));
         setScanCode('');
         setSaleDescription('');
-        setSaleDate(new Date().toISOString().split('T')[0]);
+        setSaleDate(getIndianDateInputValue());
         // Refresh catalog quantities
         fetchPOSData(false);
         triggerToast('Sale saved successfully!');
@@ -904,7 +905,11 @@ const POS = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Date:</span>
-                  <span>{new Date(checkoutInvoice.date).toLocaleDateString()}</span>
+                  <span>{formatIndianDate(checkoutInvoice.date)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-1 dark:border-slate-850">
+                  <span>Time (AM/PM):</span>
+                  <span>{formatIndianTime(checkoutInvoice.date)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Client:</span>
@@ -1059,11 +1064,12 @@ const POS = () => {
             <div className="text-center space-y-1">
               <h2 className="font-extrabold text-base tracking-widest uppercase">Deepali Creation</h2>
               <p className="text-[10px] leading-tight">Deepali creation I-14 new supermarket near bedi gate jamnagar, 361001</p>
-              <p className="text-[10px]">Tel: 9988776655</p>
+              <p className="text-[10px]">Tel: 9725015134</p>
             </div>
             <div className="border-t border-b border-black py-1.5 space-y-1 text-[10px]">
               <div>Invoice: <span className="font-bold">{checkoutInvoice.invoiceNumber}</span></div>
-              <div>Date: {new Date(checkoutInvoice.date).toLocaleDateString()}</div>
+              <div>Date: {formatIndianDate(checkoutInvoice.date)}</div>
+              <div>Time (AM/PM): {formatIndianTime(checkoutInvoice.date)}</div>
               <div>Cashier: {checkoutInvoice.createdBy?.name || 'Cashier Counter'}</div>
               <div>Customer: {checkoutInvoice.customer?.name} ({checkoutInvoice.customer?.mobile})</div>
             </div>
