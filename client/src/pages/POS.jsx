@@ -160,14 +160,19 @@ const POS = () => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') refreshProducts();
     };
+    const handleCatalogUpdate = (event) => {
+      if (event.key === 'pos_catalog_updated') refreshProducts();
+    };
 
     const refreshInterval = window.setInterval(refreshProducts, 15000);
     window.addEventListener('focus', refreshProducts);
+    window.addEventListener('storage', handleCatalogUpdate);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.clearInterval(refreshInterval);
       window.removeEventListener('focus', refreshProducts);
+      window.removeEventListener('storage', handleCatalogUpdate);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
