@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Sliders,
   Barcode,
-  Save
+  Save,
+  Tags
 } from 'lucide-react';
 
 const BARCODE_STYLES = {
@@ -201,6 +202,7 @@ const Products = () => {
 
   // Modals state
   const [showAddEditModal, setShowAddEditModal] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -616,6 +618,29 @@ const Products = () => {
     }
   };
 
+  const handleDeleteCategory = async (category) => {
+    const productsUsingCategory = products.filter(
+      product => (product.category?._id || product.category) === category._id
+    ).length;
+    if (productsUsingCategory > 0) {
+      showToast(`Cannot delete "${category.name}" because products still use it.`, 'error');
+      return;
+    }
+
+    if (!window.confirm(`Delete the unused category "${category.name}"?`)) return;
+
+    try {
+      const res = await API.delete(`/categories/${category._id}`);
+      if (res.data.success) {
+        setCategories(prev => prev.filter(item => item._id !== category._id));
+        if (selectedCategory === category._id) setSelectedCategory('');
+        showToast(`Category "${category.name}" deleted.`);
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message, 'error');
+    }
+  };
+
   const handleExcelImport = async (e) => {
     e.preventDefault();
     if (!excelFile) return;
@@ -751,17 +776,30 @@ const Products = () => {
             </div>
 
             {/* Category Filter */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-primary-500 transition"
-              id="product-category-filter"
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="min-w-0 flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl py-2 px-3 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-primary-500 transition"
+                id="product-category-filter"
+              >
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
+              {(user?.role === 'Super Admin' || user?.role === 'Admin') && (
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryManager(true)}
+                  className="shrink-0 p-2 text-slate-500 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                  title="Manage product categories"
+                  aria-label="Manage product categories"
+                >
+                  <Tags size={16} />
+                </button>
+              )}
+            </div>
 
             {/* Brand Filter */}
             <select
@@ -907,6 +945,66 @@ const Products = () => {
             </div>
           </div>
         </div>
+
+        {showCategoryManager && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Manage Product Categories</h3>
+                <button
+                  onClick={() => setShowCategoryManager(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  aria-label="Close category manager"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Only unused categories can be deleted. Reassign or remove their products first.
+              </p>
+              <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                {categories.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-slate-400">No categories to manage.</p>
+                ) : categories.map(category => {
+                  const productsUsingCategory = products.filter(
+                    product => (product.category?._id || product.category) === category._id
+                  ).length;
+
+                  return (
+                    <div key={category._id} className="flex items-center justify-between gap-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{category.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {productsUsingCategory > 0
+                            ? `In use by ${productsUsingCategory} product${productsUsingCategory === 1 ? '' : 's'}`
+                            : 'Unused'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(category)}
+                        disabled={productsUsingCategory > 0}
+                        className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-40"
+                        title={productsUsingCategory > 0 ? 'Category is assigned to products' : 'Delete unused category'}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end border-t border-slate-100 dark:border-slate-800 pt-3">
+                <button
+                  onClick={() => setShowCategoryManager(false)}
+                  className="rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* MODAL 1: Add/Edit Product */}
         {showAddEditModal && (

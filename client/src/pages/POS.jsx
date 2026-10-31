@@ -194,52 +194,69 @@ const POS = () => {
         );
       }
 
-      // 3. If found locally, add it using the grid add logic (verifies warehouse & stock)
+      // The local catalog is only for matching; stock is refreshed before adding.
       if (prod) {
-        handleGridAdd(prod);
+        await handleGridAdd(prod);
         return;
       }
 
-      // 4. Fallback to API scan if not found in local list (e.g. newly created products)
       const res = await API.get(`/products/scan/${targetValue.trim()}`);
       if (res.data.success) {
-        handleGridAdd(res.data.data);
+        await handleGridAdd(res.data.data);
       } else {
         triggerToast('Product not found or inactive', 'error');
       }
     } catch (err) {
-      triggerToast('Product not found or inactive', 'error');
+      triggerToast(err.response?.data?.message || err.message, 'error');
     } finally {
       focusScanner();
     }
   };
 
   // Add via grid click
-  const handleGridAdd = (prod) => {
+  const handleGridAdd = async (prod) => {
     if (!warehouseId) {
       triggerToast('Please select a warehouse first!', 'error');
       return;
     }
 
-    const whStock = prod.warehouseStock.find(s => s.warehouse === warehouseId);
-    const available = whStock ? whStock.quantity : 0;
+    try {
+      const code = prod.barcodeValue || prod.code;
+      const res = await API.get(`/products/scan/${encodeURIComponent(code)}`);
+      if (!res.data.success) {
+        triggerToast('Product not found or inactive', 'error');
+        return;
+      }
 
-    const existingInCart = items.find(it => it._id === prod._id);
-    const currentQty = existingInCart ? existingInCart.quantity : 0;
+      const currentProduct = res.data.data;
+      const whStock = (currentProduct.warehouseStock || []).find((stock) => {
+        const stockWarehouseId = typeof stock.warehouse === 'object'
+          ? stock.warehouse?._id
+          : stock.warehouse;
+        return stockWarehouseId === warehouseId;
+      });
+      const available = Number(whStock?.quantity) || 0;
 
-    if (available <= 0) {
-      triggerToast('Product is out of stock!', 'error');
-      return;
+      const existingInCart = items.find(it => it._id === currentProduct._id);
+      const currentQty = existingInCart ? existingInCart.quantity : 0;
+
+      if (available <= 0) {
+        triggerToast('Product is out of stock!', 'error');
+        return;
+      }
+
+      if (available <= currentQty) {
+        triggerToast(`Insufficient stock in selected warehouse. Available: ${available}`, 'error');
+        return;
+      }
+
+      dispatch(addToCart(currentProduct));
+      triggerToast(`Added ${currentProduct.name}`);
+    } catch (err) {
+      triggerToast(err.response?.data?.message || err.message, 'error');
+    } finally {
+      focusScanner();
     }
-
-    if (available <= currentQty) {
-      triggerToast(`Insufficient stock in selected warehouse. Available: ${available}`, 'error');
-      return;
-    }
-
-    dispatch(addToCart(prod));
-    triggerToast(`Added ${prod.name}`);
-    focusScanner();
   };
 
   const handleQtyChange = (productId, q) => {

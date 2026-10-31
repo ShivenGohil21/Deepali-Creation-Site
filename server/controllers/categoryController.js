@@ -1,4 +1,5 @@
 const Category = require('../models/Category');
+const Product = require('../models/Product');
 const { logAction } = require('../utils/auditLogger');
 
 exports.getCategories = async (req, res) => {
@@ -57,6 +58,14 @@ exports.deleteCategory = async (req, res) => {
     const category = await Category.findById(req.params.id);
     if (!category) {
       return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    const productsUsingCategory = await Product.countDocuments({ category: category._id });
+    if (productsUsingCategory > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot delete this category because ${productsUsingCategory} product(s) still use it`
+      });
     }
 
     await Category.deleteOne({ _id: req.params.id });
