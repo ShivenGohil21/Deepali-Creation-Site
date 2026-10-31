@@ -6,6 +6,7 @@ import { initializeTheme } from './store/uiSlice';
 // Components & Layout
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
+import GlobalBarcodeScanner from './components/GlobalBarcodeScanner';
 
 // Pages
 import Login from './pages/Login';
@@ -63,6 +64,7 @@ function App() {
           element={
             <PrivateRoute>
               <div className="flex min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
+                <GlobalBarcodeScanner />
                 {/* Sidebar Column */}
                 <Sidebar />
 

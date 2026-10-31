@@ -594,11 +594,6 @@ const Products = () => {
         const res = await API.post('/products', payload);
         if (res.data.success) {
           showToast('Product added successfully!');
-          try {
-            localStorage.setItem('pos_catalog_updated', `${Date.now()}-${Math.random()}`);
-          } catch (error) {
-            showToast('Product saved, but other POS tabs could not be notified.', 'error');
-          }
           await fetchInitialData();
           setShowAddEditModal(false);
         }
