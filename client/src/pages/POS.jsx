@@ -140,6 +140,38 @@ const POS = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let refreshInProgress = false;
+
+    const refreshProducts = async () => {
+      if (refreshInProgress || document.visibilityState === 'hidden') return;
+
+      refreshInProgress = true;
+      try {
+        const res = await API.get('/products');
+        if (res.data.success) setProductsList(res.data.data);
+      } catch (err) {
+        triggerToast(err.response?.data?.message || err.message, 'error');
+      } finally {
+        refreshInProgress = false;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshProducts();
+    };
+
+    const refreshInterval = window.setInterval(refreshProducts, 15000);
+    window.addEventListener('focus', refreshProducts);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+      window.removeEventListener('focus', refreshProducts);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const focusScanner = () => {
     if (scanInputRef.current) {
       scanInputRef.current.focus();
